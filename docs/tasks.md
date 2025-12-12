@@ -170,7 +170,8 @@ scientific-rag/
   - **Paragraph-based splitting**: Split on `\n` boundaries
   - **Overlap strategy**: Add overlap between chunks for context
   - Configurable `chunk_size` (default: 512 tokens) and `chunk_overlap` (default: 50 tokens)
-  - **Metadata preservation**: Store source paper index, section name, position
+  - **Metadata preservation**: Store source (arxiv/pubmed), normalized section name, paper_id, position
+  - Normalize section names to enum values (introduction, methods, results, conclusion, other)
 
 - [ ] **2.3** Create processing script to generate chunks
   - Batch processing with progress tracking
@@ -224,22 +225,13 @@ scientific-rag/
 
 - [ ] **4.1** Implement `scientific_rag/application/query_processing/self_query.py`
 
-  - Extract metadata filters from natural language queries
+  - Extract metadata filters from natural language queries using **rule-based matching**
   - Detect source preferences: "arxiv papers about..." → filter to arxiv
   - Detect section preferences: "in the methods section..." → filter to methods
-  - Use LLM to parse query intent
-  - Example prompt:
-
-    ```
-    Extract search filters from this query. Return JSON with:
-    - source: "arxiv", "pubmed", or "any"
-    - section: "introduction", "methods", "results", "conclusion", or "any"
-
-    Query: {query}
-    ```
-
+  - Use regex/keyword matching
+  - No LLM needed - metadata is already structured in chunks from dataset
   - Return structured `QueryFilters` object
-  - Filters are passed to Qdrant for efficient pre-filtering
+  - Filters are passed to Qdrant for efficient pre-filtering before vector search
 
 - [ ] **4.2** Implement `scientific_rag/application/query_processing/query_expansion.py`
 

@@ -15,7 +15,7 @@ class AppSettings(BaseSettings):
     )
 
     # Application
-    root_dir: Path = Field(default_factory=lambda: Path(__file__).parent.parent)
+    root_dir: Path = Field(default_factory=lambda: Path(__file__).parent.parent.parent)
     logging_level: int = logging.INFO
 
     # Qdrant
@@ -30,8 +30,8 @@ class AppSettings(BaseSettings):
 
     # Chunking
     chunk_size: int = 512  # tokens
-    chunk_overlap: int = 50
-    min_chunk_size: int = 100
+    chunk_overlap: int = 25
+    min_chunk_size: int = 25
 
     # Retrieval
     retrieval_top_k: int = 10

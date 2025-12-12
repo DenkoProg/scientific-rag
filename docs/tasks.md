@@ -159,21 +159,16 @@ scientific-rag/
 
 ### Phase 2: Chunking Strategy
 
-- [ ] **2.1** Create `scientific_rag/application/chunking/base.py`
-
-  - Abstract `BaseChunker` class
-  - Define interface: `chunk(document) -> List[Chunk]`
-
-- [ ] **2.2** Implement `scientific_rag/application/chunking/scientific_chunker.py`
+- [✅] **2.1** Implement `scientific_rag/application/chunking/scientific_chunker.py`
 
   - **Section-aware chunking**: Parse `section_names` to identify sections
   - **Paragraph-based splitting**: Split on `\n` boundaries
   - **Overlap strategy**: Add overlap between chunks for context
-  - Configurable `chunk_size` (default: 512 tokens) and `chunk_overlap` (default: 50 tokens)
+  - Configurable `chunk_size` and `chunk_overlap`
   - **Metadata preservation**: Store source (arxiv/pubmed), normalized section name, paper_id, position
   - Normalize section names to enum values (introduction, methods, results, conclusion, other)
 
-- [ ] **2.3** Create processing script to generate chunks
+- [✅] **2.2** Create processing script to generate chunks
   - Batch processing with progress tracking
   - Save chunks to disk (JSON/Parquet) for reuse
   - Generate unique chunk IDs (hash-based)
@@ -187,14 +182,7 @@ scientific-rag/
   - Batch embedding support
   - GPU/CPU device configuration
 
-- [ ] **3.2** Implement `scientific_rag/application/retrieval/bm25_retriever.py`
-
-  - Use `rank_bm25` library
-  - Tokenization with proper preprocessing
-  - `search(query, k) -> List[Chunk]` interface
-  - Score normalization
-
-- [ ] **3.3** Implement `scientific_rag/infrastructure/qdrant.py`
+- [ ] **3.2** Implement `scientific_rag/infrastructure/qdrant.py`
 
   - Qdrant client wrapper (local Docker or Qdrant Cloud)
   - Collection creation with proper schema
@@ -205,6 +193,14 @@ scientific-rag/
   - `upsert_chunks(chunks)` - batch insert with embeddings
   - `search(query_vector, filters, k)` - filtered vector search
   - Support for Qdrant filter syntax
+
+
+- [ ] **3.3** Implement `scientific_rag/application/retrieval/bm25_retriever.py`
+
+  - Use `rank_bm25` library
+  - Tokenization with proper preprocessing
+  - `search(query, k) -> List[Chunk]` interface
+  - Score normalization
 
 - [ ] **3.4** Implement `scientific_rag/application/retrieval/dense_retriever.py`
 

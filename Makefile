@@ -21,6 +21,10 @@ qdrant-down: ## Stop Qdrant vector database
 qdrant-logs: ## Show Qdrant logs
 	@docker-compose logs -f qdrant
 
+.PHONY: chunk-data
+chunk-data: ## Process and chunk papers
+	@uv run python -m scientific_rag.application.scripts.chunk_data
+
 .PHONY: run-app
 run-app: ## Run Gradio demo application
 	@uv run python -m demo.main

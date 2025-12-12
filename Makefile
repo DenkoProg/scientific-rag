@@ -1,3 +1,4 @@
+# Scientific RAG - Makefile
 
 .PHONY: install
 install: ## Install dependencies and setup pre-commit hooks
@@ -5,14 +6,45 @@ install: ## Install dependencies and setup pre-commit hooks
 	@uv sync --frozen
 	@uv run pre-commit install
 
+.PHONY: qdrant-up
+qdrant-up: ## Start Qdrant vector database
+	@echo "🚀 Starting Qdrant..."
+	@docker-compose up -d qdrant
+	@echo "✅ Qdrant running at http://localhost:6333"
+
+.PHONY: qdrant-down
+qdrant-down: ## Stop Qdrant vector database
+	@echo "🛑 Stopping Qdrant..."
+	@docker-compose down
+
+.PHONY: qdrant-logs
+qdrant-logs: ## Show Qdrant logs
+	@docker-compose logs -f qdrant
+
+.PHONY: run-app
+run-app: ## Run Gradio demo application
+	@uv run python -m demo.main
+
+.PHONY: test
+test: ## Run tests
+	@uv run pytest tests -v
+
 .PHONY: lint
 lint: ## Run ruff linter
-	uv run ruff check
+	@uv run ruff check
 
 .PHONY: format
 format: ## Format code and fix linting issues
-	uv run ruff format
-	uv run ruff check --fix
+	@uv run ruff format
+	@uv run ruff check --fix
+
+.PHONY: clean
+clean: ## Clean cache and temporary files
+	@find . -type d -name "__pycache__" -exec rm -rf {} +
+	@find . -type f -name "*.pyc" -delete
+	@find . -type d -name ".pytest_cache" -exec rm -rf {} +
+	@find . -type d -name ".ruff_cache" -exec rm -rf {} +
+	@find . -type d -name "*.egg-info" -exec rm -rf {} +
 
 .PHONY: help
 help: ## Show this help message

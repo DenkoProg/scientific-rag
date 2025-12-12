@@ -100,7 +100,7 @@ scientific-rag/
 
 ### Phase 1: Project Setup & Data Loading
 
-- [ ] **1.1** Update `pyproject.toml` with project dependencies
+- [✅] **1.1** Update `pyproject.toml` with project dependencies
 
   - `datasets` - HuggingFace datasets
   - `sentence-transformers` - Embeddings and cross-encoders
@@ -114,7 +114,7 @@ scientific-rag/
   - `numpy`, `scipy` - Numerical operations
   - `tqdm` - Progress bars
 
-- [ ] **1.2** Create `docker-compose.yaml` for local infrastructure
+- [✅] **1.2** Create `docker-compose.yaml` for local infrastructure
 
   - Qdrant vector database service
   - Example:
@@ -132,7 +132,7 @@ scientific-rag/
     ```
   - Add `make qdrant-up` and `make qdrant-down` commands
 
-- [ ] **1.3** Create `scientific_rag/settings.py`
+- [✅] **1.3** Create `scientific_rag/settings.py`
 
   - Environment variable management
   - Model IDs configuration
@@ -140,13 +140,13 @@ scientific-rag/
   - Qdrant connection settings (host, port, API key for cloud)
   - Default chunking parameters
 
-- [ ] **1.4** Create `scientific_rag/domain/` entities
+- [✅] **1.4** Create `scientific_rag/domain/` entities
 
   - `types.py`: Enums for DataSource (ARXIV, PUBMED), SectionType
   - `documents.py`: `ScientificPaper`, `PaperChunk` Pydantic models with metadata
   - `queries.py`: `Query`, `EmbeddedQuery`, `QueryFilters` models
 
-- [ ] **1.5** Implement `scientific_rag/application/data_loader.py`
+- [✅] **1.5** Implement `scientific_rag/application/data_loader.py`
   - Load `armanc/scientific_papers` from HuggingFace
   - Support both `arxiv` and `pubmed` subsets
   - Configurable sample size for development
@@ -182,7 +182,7 @@ scientific-rag/
 - [ ] **3.1** Create `scientific_rag/application/embeddings/encoder.py`
 
   - Singleton pattern for embedding model
-  - Use `sentence-transformers/all-MiniLM-L6-v2` (or similar)
+  - Use `intfloat/e5-small-v2`
   - Batch embedding support
   - GPU/CPU device configuration
 
@@ -279,7 +279,7 @@ scientific-rag/
 ### Phase 5: Reranking
 
 - [ ] **5.1** Implement `scientific_rag/application/reranking/cross_encoder.py`
-  - Use `cross-encoder/ms-marco-MiniLM-L-4-v2` (or similar)
+  - Use `cross-encoder/ms-marco-MiniLM-L6-v2` (or similar)
   - `rerank(query, chunks, top_k) -> List[Chunk]` interface
   - Batch processing for efficiency
   - Score-based sorting

@@ -1,26 +1,56 @@
 [project]
-name = "python-repo-template"
+name = "scientific-rag"
 version = "0.1.0"
-description = "Description"
+description = "Scientific Papers RAG System with Advanced Retrieval"
 readme = "README.md"
 requires-python = ">=3.11"
 
 dependencies = [
+    # Data
+    "datasets<3.0.0",
+    "huggingface-hub>=0.20.0",
+
+    # ML/Embeddings
+    "sentence-transformers>=3.0.0",
+    "torch>=2.0.0",
+    "numpy>=1.26.0",
+    "scipy>=1.11.0",
+
+    # Retrieval
+    "rank-bm25>=0.2.2",
+    "qdrant-client>=1.8.0",
+
+    # LLM
+    "litellm>=1.0.0",
+
+    # Configuration
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+
+    # UI
+    "gradio>=4.0.0",
+
+    # Utilities
+    "loguru>=0.7.0",
+    "tqdm>=4.65.0",
+    "python-dotenv>=1.0.0",
     "rootutils",
+    "numpy",
 ]
 
 [dependency-groups]
 dev = [
-    "ipykernel",
-    "mypy",
-    "pre-commit",
+    "pytest>=8.0.0",
+    "ruff>=0.4.0",
+    "mypy>=1.10.0",
+    "pre-commit>=3.0.0",
+    "ipykernel>=6.0.0",
     "ipywidgets",
-    "ruff",
 ]
 
-# [build-system]
-# requires = ["hatchling"]
-# build-backend = "hatchling.build"
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [tool.pytest.ini_options]
 python_files = ["test_*.py", "*_test.py"]

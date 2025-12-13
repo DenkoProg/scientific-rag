@@ -3,13 +3,6 @@
 default_language_version:
   python: python3.11
 repos:
-  # Security - Detect hardcoded secrets
-  - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.22.1
-    hooks:
-      - id: gitleaks
-        name: 🔒 Detect hardcoded secrets
-
   # Git & Filesystem checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0

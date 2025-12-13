@@ -3,8 +3,8 @@ from pathlib import Path
 from loguru import logger
 import typer
 
-from scientific_rag.application.scripts.chunk_data import chunk_data
-from scientific_rag.application.scripts.index_qdrant import index_qdrant
+from scientific_rag.scripts.chunk_data import chunk_data
+from scientific_rag.scripts.index_qdrant import index_qdrant
 
 
 app = typer.Typer(name="scientific-rag", help="Scientific RAG data pipeline CLI", add_completion=False)

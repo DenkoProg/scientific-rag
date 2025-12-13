@@ -84,9 +84,9 @@ class QdrantService:
     ) -> list[PaperChunk]:
         query_filter = self._build_filters(filters) if filters else None
 
-        results = self.client.search(
+        results = self.client.query_points(
             collection_name=self.collection_name,
-            query_vector=query_vector,
+            query=query_vector,
             limit=limit,
             score_threshold=score_threshold,
             query_filter=query_filter,
@@ -98,7 +98,7 @@ class QdrantService:
                 score=hit.score,
                 embedding=None,
             )
-            for hit in results
+            for hit in results.points
         ]
 
     def _build_filters(self, filters: QueryFilters) -> Filter | None:

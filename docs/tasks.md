@@ -317,7 +317,7 @@ scientific-rag/
 
 ### Phase 7: User Interface
 
-- [ ] **7.1** Create `demo/main.py` with Gradio
+- [✅] **7.1** Create `demo/main.py` with Gradio
 
   - Text input for questions
   - API key input field (not stored in code)
@@ -326,23 +326,23 @@ scientific-rag/
     - Source: Any / ArXiv / PubMed
     - Section: Any / Introduction / Methods / Results / Conclusion
   - Checkboxes for pipeline components:
-    - [ ] Enable Self-Query (metadata extraction)
-    - [ ] Enable Query Expansion
-    - [ ] Enable BM25
-    - [ ] Enable Dense Retrieval (Qdrant)
-    - [ ] Enable Reranking
+    - [✅] Enable Self-Query (metadata extraction)
+    - [✅] Enable Query Expansion
+    - [✅] Enable BM25
+    - [✅] Enable Dense Retrieval (Qdrant)
+    - [✅] Enable Reranking
   - Slider for top-k parameter
   - Slider for query expansion count (1-5)
   - Output: Answer with citations
   - Expandable section showing retrieved chunks with metadata
 
-- [ ] **7.2** Add service description
+- [✅] **7.2** Add service description
 
   - Brief explanation of the RAG system
   - Dataset information
   - Usage instructions
 
-- [ ] **7.3** Style and UX improvements
+- [✅] **7.3** Style and UX improvements
   - Clear layout
   - Loading indicators
   - Error messages for invalid inputs

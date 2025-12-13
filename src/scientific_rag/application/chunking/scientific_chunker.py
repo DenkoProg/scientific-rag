@@ -1,5 +1,5 @@
-import hashlib
 import re
+from uuid import NAMESPACE_DNS, uuid5
 
 from scientific_rag.domain.documents import PaperChunk, ScientificPaper
 from scientific_rag.domain.types import SectionType
@@ -119,7 +119,7 @@ class ScientificChunker:
 
     def _generate_chunk_id(self, paper_id: str, position: int) -> str:
         content = f"{paper_id}_{position}"
-        return hashlib.sha256(content.encode()).hexdigest()[:16]
+        return str(uuid5(NAMESPACE_DNS, content))
 
     def _normalize_placeholders(self, text: str) -> str:
         if not text:

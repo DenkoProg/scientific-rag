@@ -36,6 +36,7 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "rootutils",
     "numpy",
+    "typer>=0.9.0",
 ]
 
 [dependency-groups]
@@ -51,6 +52,9 @@ dev = [
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[project.scripts]
+cli = "scientific_rag.cli:app"
 
 [tool.pytest.ini_options]
 python_files = ["test_*.py", "*_test.py"]

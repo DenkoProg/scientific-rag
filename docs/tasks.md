@@ -175,21 +175,17 @@ scientific-rag/
 
 ### Phase 3: Retrieval Implementation
 
-- [ ] **3.1** Create `scientific_rag/application/embeddings/encoder.py`
+- [✅] **3.1** Create `scientific_rag/application/embeddings/encoder.py`
 
   - Singleton pattern for embedding model
   - Use `intfloat/e5-small-v2`
   - Batch embedding support
   - GPU/CPU device configuration
 
-- [ ] **3.2** Implement `scientific_rag/infrastructure/qdrant.py`
+- [✅] **3.2** Implement `scientific_rag/infrastructure/qdrant.py`
 
   - Qdrant client wrapper (local Docker or Qdrant Cloud)
   - Collection creation with proper schema
-  - Payload fields for metadata filtering:
-    - `source`: arxiv or pubmed
-    - `section`: introduction, methods, results, conclusion, other
-    - `paper_id`: reference to source paper
   - `upsert_chunks(chunks)` - batch insert with embeddings
   - `search(query_vector, filters, k)` - filtered vector search
   - Support for Qdrant filter syntax

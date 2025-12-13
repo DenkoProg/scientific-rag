@@ -23,7 +23,19 @@ qdrant-logs: ## Show Qdrant logs
 
 .PHONY: chunk-data
 chunk-data: ## Process and chunk papers
-	@uv run python -m scientific_rag.application.scripts.chunk_data
+	@uv run cli chunk
+
+.PHONY: index-qdrant
+index-qdrant: ## Index chunks to Qdrant
+	@uv run cli index
+
+.PHONY: pipeline
+pipeline: ## Run complete pipeline (chunk + index)
+	@uv run cli pipeline
+
+.PHONY: info
+info: ## Show pipeline configuration and Qdrant status
+	@uv run cli info
 
 .PHONY: run-app
 run-app: ## Run Gradio demo application

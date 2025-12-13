@@ -1,22 +1,15 @@
-"""
-Scientific RAG Demo - Gradio User Interface
-
-A Retrieval-Augmented Generation system for answering questions about scientific papers
-using the armanc/scientific_papers dataset (ArXiv + PubMed).
-"""
+from pathlib import Path
+import sys
+from typing import Any
 
 import gradio as gr
-from typing import Any
-import sys
-from pathlib import Path
 
-# Add src to path for imports
+
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from scientific_rag.domain.queries import QueryFilters, Query, ExpandedQuery
 from scientific_rag.domain.documents import PaperChunk
+from scientific_rag.domain.queries import Query, QueryFilters
 from scientific_rag.domain.types import DataSource, SectionType
-from scientific_rag.settings import settings
 
 
 # =============================================================================
@@ -75,15 +68,16 @@ LLM_PROVIDERS = {
 # Mock RAG Pipeline (to be replaced with real implementation)
 # =============================================================================
 
+
 class MockRAGPipeline:
     """
     Mock RAG pipeline for UI development.
     Replace with actual RAGPipeline implementation from scientific_rag.application.rag.pipeline
     """
-    
+
     def __init__(self):
         self.retrieved_chunks: list[PaperChunk] = []
-    
+
     def process_query(
         self,
         query: str,
@@ -102,34 +96,30 @@ class MockRAGPipeline:
     ) -> tuple[str, list[dict[str, Any]]]:
         """
         Process a query through the RAG pipeline.
-        
+
         Returns:
             Tuple of (answer_text, retrieved_chunks_info)
         """
-        # Validate inputs
         if not query.strip():
             raise ValueError("Please enter a question.")
-        
+
         if not api_key.strip():
             raise ValueError("Please enter your API key.")
-        
+
         if not use_bm25 and not use_dense:
             raise ValueError("Please enable at least one retrieval method (BM25 or Dense).")
-        
-        # Build filters
+
         filters = QueryFilters(
             source=source_filter.lower() if source_filter != "Any" else "any",
             section=section_filter.lower() if section_filter != "Any" else "any",
         )
-        
-        # Create query object
+
         query_obj = Query(
             text=query,
             filters=filters if (source_filter != "Any" or section_filter != "Any") else None,
             top_k=top_k,
         )
-        
-        # Build pipeline info
+
         pipeline_info = []
         if use_self_query:
             pipeline_info.append("✓ Self-Query: Extracting metadata filters")
@@ -141,15 +131,12 @@ class MockRAGPipeline:
             pipeline_info.append("✓ Dense: Semantic vector search")
         if use_reranking:
             pipeline_info.append("✓ Reranking: Cross-encoder scoring")
-        
-        # Mock retrieved chunks
+
         mock_chunks = self._generate_mock_chunks(query, filters, top_k)
         self.retrieved_chunks = mock_chunks
-        
-        # Mock answer generation
+
         answer = self._generate_mock_answer(query, mock_chunks, provider, model)
-        
-        # Format chunks for display
+
         chunks_info = [
             {
                 "chunk_id": chunk.chunk_id,
@@ -161,33 +148,31 @@ class MockRAGPipeline:
             }
             for chunk in mock_chunks
         ]
-        
+
         return answer, chunks_info
-    
-    def _generate_mock_chunks(
-        self, 
-        query: str, 
-        filters: QueryFilters, 
-        top_k: int
-    ) -> list[PaperChunk]:
-        """Generate mock chunks for demonstration."""
+
+    def _generate_mock_chunks(self, query: str, filters: QueryFilters, top_k: int) -> list[PaperChunk]:
         mock_chunks = []
-        
+
         for i in range(min(top_k, 5)):
             source = DataSource.ARXIV if filters.source == "any" or filters.source == "arxiv" else DataSource.PUBMED
-            section = SectionType(filters.section) if filters.section != "any" else [
-                SectionType.INTRODUCTION,
-                SectionType.METHODS,
-                SectionType.RESULTS,
-                SectionType.CONCLUSION,
-            ][i % 4]
-            
+            section = (
+                SectionType(filters.section)
+                if filters.section != "any"
+                else [
+                    SectionType.INTRODUCTION,
+                    SectionType.METHODS,
+                    SectionType.RESULTS,
+                    SectionType.CONCLUSION,
+                ][i % 4]
+            )
+
             chunk = PaperChunk(
                 chunk_id=f"mock_chunk_{i}",
                 text=f"[Mock content for demonstration] This is a sample text passage from a scientific paper "
-                     f"that would be relevant to the query: '{query}'. The actual RAG system will retrieve "
-                     f"real content from the scientific papers dataset based on semantic similarity and "
-                     f"keyword matching. This chunk is from the {section.value} section of an {source.value} paper.",
+                f"that would be relevant to the query: '{query}'. The actual RAG system will retrieve "
+                f"real content from the scientific papers dataset based on semantic similarity and "
+                f"keyword matching. This chunk is from the {section.value} section of an {source.value} paper.",
                 paper_id=f"paper_{1000 + i}",
                 source=source,
                 section=section,
@@ -195,25 +180,26 @@ class MockRAGPipeline:
                 score=0.95 - (i * 0.1),
             )
             mock_chunks.append(chunk)
-        
+
         return mock_chunks
-    
+
     def _generate_mock_answer(
-        self, 
-        query: str, 
+        self,
+        query: str,
         chunks: list[PaperChunk],
         provider: str,
         model: str,
     ) -> str:
-        """Generate mock answer for demonstration."""
-        citations = "\n".join([
-            f"[{i+1}] {chunk.text[:100]}... ({chunk.source.value}, {chunk.section.value})"
-            for i, chunk in enumerate(chunks[:3])
-        ])
-        
+        citations = "\n".join(
+            [
+                f"[{i + 1}] {chunk.text[:100]}... ({chunk.source.value}, {chunk.section.value})"
+                for i, chunk in enumerate(chunks[:3])
+            ]
+        )
+
         return f"""## Answer
 
-**Note**: This is a demonstration response. The actual RAG system will use {provider}/{model} 
+**Note**: This is a demonstration response. The actual RAG system will use {provider}/{model}
 to generate answers based on retrieved scientific paper content.
 
 Based on the retrieved documents, here is what the scientific literature says about your question:
@@ -234,7 +220,6 @@ The answer would synthesize information from the retrieved chunks, citing specif
 """
 
 
-# Initialize mock pipeline (replace with real pipeline when available)
 rag_pipeline = MockRAGPipeline()
 
 
@@ -242,8 +227,8 @@ rag_pipeline = MockRAGPipeline()
 # UI Event Handlers
 # =============================================================================
 
+
 def update_models(provider: str) -> gr.Dropdown:
-    """Update model dropdown based on selected provider."""
     if provider in LLM_PROVIDERS:
         models = LLM_PROVIDERS[provider]["models"]
         default = LLM_PROVIDERS[provider]["default"]
@@ -266,12 +251,6 @@ def process_query(
     top_k: int,
     expansion_count: int,
 ) -> tuple[str, str, gr.update, gr.update]:
-    """
-    Main query processing function.
-    
-    Returns:
-        Tuple of (answer_markdown, chunks_json, examples_update, answer_section_update)
-    """
     try:
         answer, chunks = rag_pipeline.process_query(
             query=query,
@@ -288,42 +267,37 @@ def process_query(
             top_k=top_k,
             expansion_count=expansion_count,
         )
-        
-        # Format chunks for display
+
         chunks_display = format_chunks_display(chunks)
-        
-        # Hide examples, show answer section
+
         return answer, chunks_display, gr.update(visible=False), gr.update(visible=True)
-    
+
     except ValueError as e:
         error_msg = f"⚠️ **Input Error**: {str(e)}"
-        # Keep examples visible, show answer section with error
         return error_msg, "", gr.update(visible=False), gr.update(visible=True)
     except Exception as e:
         error_msg = f"❌ **Error**: {str(e)}"
-        # Keep examples visible, show answer section with error
         return error_msg, "", gr.update(visible=False), gr.update(visible=True)
 
 
 def format_chunks_display(chunks: list[dict[str, Any]]) -> str:
-    """Format retrieved chunks for display in the UI."""
     if not chunks:
         return "No chunks retrieved."
-    
+
     lines = ["## 📄 Retrieved Chunks\n"]
-    
+
     for i, chunk in enumerate(chunks, 1):
-        score_display = f"{chunk['score']:.3f}" if chunk.get('score') else "N/A"
+        score_display = f"{chunk['score']:.3f}" if chunk.get("score") else "N/A"
         lines.append(f"""
 ### Chunk {i} (Score: {score_display})
 
-**Source**: {chunk['source'].upper()} | **Section**: {chunk['section'].capitalize()} | **Paper ID**: {chunk['paper_id']}
+**Source**: {chunk["source"].upper()} | **Section**: {chunk["section"].capitalize()} | **Paper ID**: {chunk["paper_id"]}
 
-> {chunk['text']}
+> {chunk["text"]}
 
 ---
 """)
-    
+
     return "\n".join(lines)
 
 
@@ -331,66 +305,60 @@ def format_chunks_display(chunks: list[dict[str, Any]]) -> str:
 # Gradio Interface
 # =============================================================================
 
+
 def create_demo() -> gr.Blocks:
-    """Create the Gradio demo interface."""
-    
+
     with gr.Blocks(title="Scientific RAG System") as demo:
-        
-        # Main Header - Centered
         gr.Markdown(MAIN_HEADER)
         gr.Markdown("---")
-        
-        # API Settings and Metadata Filters - Full Width Row
+
         gr.Markdown("## ⚙️ Configuration")
-        
+
         with gr.Row():
-            # API Configuration
             with gr.Column(scale=1):
                 gr.Markdown("### 🔑 API Settings")
-                
+
                 api_key = gr.Textbox(
                     label="API Key",
                     placeholder="Enter your API key here...",
                     type="password",
                     info="Your API key is not stored and only used for this session",
                 )
-                
+
                 provider = gr.Dropdown(
                     label="LLM Provider",
                     choices=list(LLM_PROVIDERS.keys()),
                     value="Groq",
                     info="Select your LLM provider",
                 )
-                
+
                 model = gr.Dropdown(
                     label="Model",
                     choices=LLM_PROVIDERS["Groq"]["models"],
                     value=LLM_PROVIDERS["Groq"]["default"],
                     info="Select the model to use",
                 )
-            
-            # Metadata Filters
+
             with gr.Column(scale=1):
                 gr.Markdown("### 🔍 Metadata Filters (Optional)")
-                
+
                 source_filter = gr.Dropdown(
                     label="Source",
                     choices=["Any", "ArXiv", "PubMed"],
                     value="Any",
                     info="Filter by paper source",
                 )
-                
+
                 section_filter = gr.Dropdown(
                     label="Section",
                     choices=["Any", "Introduction", "Methods", "Results", "Conclusion"],
                     value="Any",
                     info="Filter by paper section",
                 )
-            
-            # Retrieval Parameters
+
             with gr.Column(scale=1):
                 gr.Markdown("### 📊 Retrieval Parameters")
-                
+
                 top_k = gr.Slider(
                     label="Top-K Results",
                     minimum=1,
@@ -399,7 +367,7 @@ def create_demo() -> gr.Blocks:
                     step=1,
                     info="Number of chunks to retrieve",
                 )
-                
+
                 expansion_count = gr.Slider(
                     label="Query Expansion Count",
                     minimum=1,
@@ -408,21 +376,18 @@ def create_demo() -> gr.Blocks:
                     step=1,
                     info="Number of query variations to generate",
                 )
-        
+
         gr.Markdown("---")
-        
-        # Pipeline Components - Full Width
+
         gr.Markdown("### 🔧 Pipeline Components")
         gr.Markdown("Enable or disable components to customize the retrieval pipeline:")
-        
+
         with gr.Row():
-            # First Column - Self-Query, Query Expansion, BM25
             with gr.Column(scale=1):
-                # Self-Query
                 with gr.Row(elem_classes="pipeline-component"):
                     with gr.Column(scale=4):
                         gr.Markdown("""
-**Self-Query**  
+**Self-Query**
 Automatically extracts metadata filters from your question
 """)
                     with gr.Column(scale=1):
@@ -431,12 +396,11 @@ Automatically extracts metadata filters from your question
                             value=True,
                             container=False,
                         )
-                
-                # Query Expansion
+
                 with gr.Row(elem_classes="pipeline-component"):
                     with gr.Column(scale=4):
                         gr.Markdown("""
-**Query Expansion**  
+**Query Expansion**
 Generates variations of your question to improve recall
 """)
                     with gr.Column(scale=1):
@@ -445,12 +409,11 @@ Generates variations of your question to improve recall
                             value=True,
                             container=False,
                         )
-                
-                # BM25
+
                 with gr.Row(elem_classes="pipeline-component"):
                     with gr.Column(scale=4):
                         gr.Markdown("""
-**BM25 (Keyword Search)**  
+**BM25 (Keyword Search)**
 Keyword-based retrieval, good for exact terms and rare words
 """)
                     with gr.Column(scale=1):
@@ -459,14 +422,12 @@ Keyword-based retrieval, good for exact terms and rare words
                             value=True,
                             container=False,
                         )
-            
-            # Second Column - Dense Retrieval, Reranking
+
             with gr.Column(scale=1):
-                # Dense Retrieval
                 with gr.Row(elem_classes="pipeline-component"):
                     with gr.Column(scale=4):
                         gr.Markdown("""
-**Dense Retrieval (Semantic Search)**  
+**Dense Retrieval (Semantic Search)**
 Vector-based retrieval using embeddings, good for semantic meaning
 """)
                     with gr.Column(scale=1):
@@ -475,12 +436,11 @@ Vector-based retrieval using embeddings, good for semantic meaning
                             value=True,
                             container=False,
                         )
-                
-                # Reranking
+
                 with gr.Row(elem_classes="pipeline-component"):
                     with gr.Column(scale=4):
                         gr.Markdown("""
-**Reranking**  
+**Reranking**
 Cross-encoder model to improve result relevance
 """)
                     with gr.Column(scale=1):
@@ -489,31 +449,29 @@ Cross-encoder model to improve result relevance
                             value=True,
                             container=False,
                         )
-        
+
         gr.Markdown("---")
-        
-        # Query and Results - Full Width
+
         gr.Markdown("## 💬 Ask a Question")
-        
+
         query = gr.Textbox(
             label="Your Question",
             placeholder="e.g., What methods are used for protein structure prediction?",
             lines=3,
             info="Enter your question about scientific papers",
         )
-        
+
         submit_btn = gr.Button(
             "🔍 Search & Generate Answer",
             variant="primary",
             size="lg",
         )
-        
+
         clear_btn = gr.Button(
             "🗑️ Clear",
             variant="secondary",
         )
-        
-        # Example Queries - shown initially
+
         with gr.Group(visible=True) as examples_section:
             gr.Examples(
                 examples=[
@@ -526,30 +484,27 @@ Cross-encoder model to improve result relevance
                 inputs=[query],
                 label="📝 Example Questions",
             )
-        
-        # Output Section - hidden initially, shown when answer is available
+
         with gr.Group(visible=False) as answer_section:
             gr.Markdown("## 📝 Answer")
-            
+
             answer_output = gr.Markdown(
                 label="Generated Answer",
                 value="",
             )
-            
-            # Retrieved Chunks Section
+
             with gr.Accordion("📄 Retrieved Chunks", open=False):
                 chunks_output = gr.Markdown(
                     label="Retrieved Chunks",
                     value="",
                 )
-                
-        # Event Handlers
+
         provider.change(
             fn=update_models,
             inputs=[provider],
             outputs=[model],
         )
-        
+
         submit_btn.click(
             fn=process_query,
             inputs=[
@@ -569,13 +524,13 @@ Cross-encoder model to improve result relevance
             ],
             outputs=[answer_output, chunks_output, examples_section, answer_section],
         )
-        
+
         clear_btn.click(
             fn=lambda: ("", "", "", gr.update(visible=True), gr.update(visible=False)),
             inputs=[],
             outputs=[query, answer_output, chunks_output, examples_section, answer_section],
         )
-    
+
     return demo
 
 
@@ -583,8 +538,8 @@ Cross-encoder model to improve result relevance
 # Main Entry Point
 # =============================================================================
 
+
 def main():
-    """Main entry point for the demo application."""
     demo = create_demo()
     demo.launch(
         server_name="0.0.0.0",
@@ -601,7 +556,7 @@ def main():
         .output-section { min-height: 300px; }
         .pipeline-component { padding: 10px; border-bottom: 1px solid #f0f0f0; }
         footer { display: none !important; }
-        """
+        """,
     )
 
 

@@ -5,7 +5,6 @@ from litellm import completion
 from loguru import logger
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-# Assuming scientific_rag.settings is available in your project structure
 from scientific_rag.settings import settings
 
 
@@ -19,7 +18,6 @@ class LLMClient:
         if not self.api_key:
             logger.warning(f"No API key provided for model {self.model}. Ensure this is intended.")
 
-    # Increased max wait to 20s to handle OpenRouter's "free tier" congestion better
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=20), reraise=True)
     def generate(self, prompt: str, system_prompt: str | None = None, **kwargs: Any) -> str:
         messages = []

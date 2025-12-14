@@ -307,7 +307,6 @@ def format_chunks_display(chunks: list[dict[str, Any]]) -> str:
 
 
 def create_demo() -> gr.Blocks:
-
     with gr.Blocks(title="Scientific RAG System") as demo:
         gr.Markdown(MAIN_HEADER)
         gr.Markdown("---")

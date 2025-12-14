@@ -23,8 +23,7 @@ class QueryProcessor:
             variations = self._expand_query(cleaned_query)
 
         logger.info(
-            f"Processed query: '{query}' -> '{cleaned_query}' | "
-            f"Filters: {filters} | Expansion: {len(variations)} vars"
+            f"Processed query: '{query}' -> '{cleaned_query}' | Filters: {filters} | Expansion: {len(variations)} vars"
         )
 
         return ExpandedQuery(original=cleaned_query, variations=variations, filters=filters)

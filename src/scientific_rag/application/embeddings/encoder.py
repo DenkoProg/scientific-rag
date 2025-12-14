@@ -1,12 +1,9 @@
-import logging
 from typing import Literal
 
+from loguru import logger
 from sentence_transformers import SentenceTransformer
 
 from scientific_rag.settings import settings
-
-
-logger = logging.getLogger(__name__)
 
 
 class EmbeddingEncoder:

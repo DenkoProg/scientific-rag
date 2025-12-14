@@ -1,15 +1,12 @@
-import logging
 from typing import Any
 
+from loguru import logger
 from qdrant_client import QdrantClient as SyncQdrantClient
 from qdrant_client.models import Distance, FieldCondition, Filter, MatchValue, PointStruct, VectorParams
 
 from scientific_rag.domain.documents import PaperChunk
 from scientific_rag.domain.queries import QueryFilters
 from scientific_rag.settings import settings
-
-
-logger = logging.getLogger(__name__)
 
 
 class QdrantService:

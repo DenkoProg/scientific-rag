@@ -9,17 +9,17 @@ install: ## Install dependencies and setup pre-commit hooks
 .PHONY: qdrant-up
 qdrant-up: ## Start Qdrant vector database
 	@echo "🚀 Starting Qdrant..."
-	@docker-compose up -d qdrant
+	@docker compose up -d qdrant
 	@echo "✅ Qdrant running at http://localhost:6333"
 
 .PHONY: qdrant-down
 qdrant-down: ## Stop Qdrant vector database
 	@echo "🛑 Stopping Qdrant..."
-	@docker-compose down
+	@docker compose down
 
 .PHONY: qdrant-logs
 qdrant-logs: ## Show Qdrant logs
-	@docker-compose logs -f qdrant
+	@docker compose logs -f qdrant
 
 .PHONY: chunk-data
 chunk-data: ## Process and chunk papers
@@ -40,10 +40,6 @@ info: ## Show pipeline configuration and Qdrant status
 .PHONY: run-app
 run-app: ## Run Gradio demo application
 	@uv run python -m demo.main
-
-.PHONY: test
-test: ## Run tests
-	@uv run pytest tests -v
 
 .PHONY: lint
 lint: ## Run ruff linter

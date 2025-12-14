@@ -1,10 +1,8 @@
 import time
-from typing import Any
 
 from loguru import logger
-from pydantic import BaseModel, Field
 
-from scientific_rag.application.query_processing.query_processor import QueryProcessor
+from scientific_rag.application.query.query_processor import QueryProcessor
 from scientific_rag.application.rag.llm_client import llm_client
 from scientific_rag.application.rag.prompt_templates import RAGPrompts
 from scientific_rag.application.reranking.cross_encoder import reranker

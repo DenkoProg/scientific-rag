@@ -191,21 +191,21 @@ scientific-rag/
   - Support for Qdrant filter syntax
 
 
-- [ ] **3.3** Implement `scientific_rag/application/retrieval/bm25_retriever.py`
+- [✅] **3.3** Implement `scientific_rag/application/retrieval/bm25_retriever.py`
 
   - Use `rank_bm25` library
   - Tokenization with proper preprocessing
   - `search(query, k) -> List[Chunk]` interface
   - Score normalization
 
-- [ ] **3.4** Implement `scientific_rag/application/retrieval/dense_retriever.py`
+- [✅] **3.4** Implement `scientific_rag/application/retrieval/dense_retriever.py`
 
   - Semantic search using Qdrant
   - Integrate with `QdrantClient` from infrastructure
   - Apply metadata filters from self-query
   - `search(query, filters, k) -> List[Chunk]` interface
 
-- [ ] **3.5** Implement `scientific_rag/application/retrieval/hybrid_retriever.py`
+- [✅] **3.5** Implement `scientific_rag/application/retrieval/hybrid_retriever.py`
   - Combine BM25 and dense retrieval
   - Pass metadata filters to both retrievers
   - Configurable weights for each method
@@ -215,7 +215,7 @@ scientific-rag/
 
 ### Phase 4: Query Processing & Metadata Filtering
 
-- [ ] **4.1** Implement `scientific_rag/application/query_processing/self_query.py`
+- [✅] **4.1** Implement `scientific_rag/application/query_processing/self_query.py`
 
   - Extract metadata filters from natural language queries using **rule-based matching**
   - Detect source preferences: "arxiv papers about..." → filter to arxiv
@@ -225,7 +225,7 @@ scientific-rag/
   - Return structured `QueryFilters` object
   - Filters are passed to Qdrant for efficient pre-filtering before vector search
 
-- [ ] **4.2** Implement `scientific_rag/application/query_processing/query_expansion.py`
+- [✅] **4.2** Implement `scientific_rag/application/query_processing/query_expansion.py`
 
   - Generate multiple query variations to improve recall
   - Use LLM to create semantically similar queries
@@ -243,7 +243,7 @@ scientific-rag/
   - Search with all expanded queries, merge results
   - Deduplicate before reranking
 
-- [ ] **4.3** Update `scientific_rag/domain/queries.py`
+- [✅] **4.3** Update `scientific_rag/domain/queries.py`
 
   - Add `QueryFilters` model for self-query results
   - Add `ExpandedQuery` model to hold query variations
@@ -262,7 +262,7 @@ scientific-rag/
 
 ### Phase 5: Reranking
 
-- [ ] **5.1** Implement `scientific_rag/application/reranking/cross_encoder.py`
+- [✅] **5.1** Implement `scientific_rag/application/reranking/cross_encoder.py`
   - Use `cross-encoder/ms-marco-MiniLM-L6-v2` (or similar)
   - `rerank(query, chunks, top_k) -> List[Chunk]` interface
   - Batch processing for efficiency
@@ -270,7 +270,7 @@ scientific-rag/
 
 ### Phase 6: LLM Integration
 
-- [ ] **6.1** Implement `scientific_rag/application/rag/llm_client.py`
+- [✅] **6.1** Implement `scientific_rag/application/rag/llm_client.py`
 
   - LiteLLM wrapper for provider abstraction
   - Support for Groq, OpenRouter, OpenAI
@@ -278,7 +278,7 @@ scientific-rag/
   - Error handling and retries
   - Response streaming (optional)
 
-- [ ] **6.2** Create `scientific_rag/application/rag/prompt_templates.py`
+- [✅] **6.2** Create `scientific_rag/application/rag/prompt_templates.py`
 
   - RAG prompt template with context injection
   - Citation-aware prompting (instruct model to cite sources)
@@ -299,7 +299,7 @@ scientific-rag/
     Answer with citations:
     ```
 
-- [ ] **6.3** Implement `scientific_rag/application/rag/pipeline.py`
+- [✅] **6.3** Implement `scientific_rag/application/rag/pipeline.py`
   - Main `RAGPipeline` class
   - Orchestrate: Query → Self-Query → Query Expansion → Retrieve (with filters) → Rerank → Generate
   - Full pipeline flow:

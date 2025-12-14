@@ -24,6 +24,7 @@ def index(
     embedding_batch_size: int = typer.Option(32, "--embedding-batch-size", "-eb"),
     upload_batch_size: int = typer.Option(100, "--upload-batch-size", "-ub"),
     create_collection: bool = typer.Option(True, "--create-collection/--no-create-collection"),
+    process_batch_size: int = typer.Option(10000, "--process-batch-size", "-pb", help="Process chunks in batches"),
 ) -> None:
     """Embed chunks and upload to Qdrant."""
     chunks_path = Path(chunks_file) if chunks_file else None
@@ -32,6 +33,7 @@ def index(
         embedding_batch_size=embedding_batch_size,
         upload_batch_size=upload_batch_size,
         create_collection=create_collection,
+        process_batch_size=process_batch_size,
     )
 
 
@@ -41,6 +43,7 @@ def pipeline(
     embedding_batch_size: int = typer.Option(32, "--embedding-batch-size", "-eb"),
     upload_batch_size: int = typer.Option(100, "--upload-batch-size", "-ub"),
     create_collection: bool = typer.Option(True, "--create-collection/--no-create-collection"),
+    process_batch_size: int = typer.Option(10000, "--process-batch-size", "-pb", help="Process chunks in batches"),
 ) -> None:
     """Run complete pipeline: chunk → embed → index."""
     logger.info("Step 1/2: Chunking data")
@@ -52,6 +55,7 @@ def pipeline(
         embedding_batch_size=embedding_batch_size,
         upload_batch_size=upload_batch_size,
         create_collection=create_collection,
+        process_batch_size=process_batch_size,
     )
 
 

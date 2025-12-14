@@ -1,15 +1,19 @@
+import json
 from pathlib import Path
 import sys
 from typing import Any
 
 import gradio as gr
+from loguru import logger
 
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+from scientific_rag.application.rag.pipeline import RAGPipeline
 from scientific_rag.domain.documents import PaperChunk
 from scientific_rag.domain.queries import Query, QueryFilters
 from scientific_rag.domain.types import DataSource, SectionType
+from scientific_rag.settings import settings
 
 
 # =============================================================================
@@ -47,10 +51,10 @@ LLM_PROVIDERS = {
             "openai/gpt-3.5-turbo",
             "openai/gpt-4o-mini",
             "anthropic/claude-3-haiku",
-            "meta-llama/llama-3.1-8b-instruct:free",
+            "meta-llama/llama-3.3-70b-instruct:free",
             "google/gemma-2-9b-it:free",
         ],
-        "default": "meta-llama/llama-3.1-8b-instruct:free",
+        "default": "meta-llama/llama-3.3-70b-instruct:free",
     },
     "OpenAI": {
         "models": [
@@ -65,18 +69,39 @@ LLM_PROVIDERS = {
 
 
 # =============================================================================
-# Mock RAG Pipeline (to be replaced with real implementation)
+# RAG Pipeline Initialization
 # =============================================================================
 
 
-class MockRAGPipeline:
-    """
-    Mock RAG pipeline for UI development.
-    Replace with actual RAGPipeline implementation from scientific_rag.application.rag.pipeline
-    """
+def load_chunks() -> list[PaperChunk]:
+    """Load chunks from processed data file."""
+    chunks_file = Path(settings.root_dir) / "data" / "processed" / f"chunks_{settings.dataset_split}.json"
+
+    if not chunks_file.exists():
+        logger.warning(f"Chunks file not found: {chunks_file}")
+        logger.warning("Please run 'make chunk-data' to generate chunks first.")
+        return []
+
+    logger.info(f"Loading chunks from {chunks_file}")
+    with open(chunks_file, encoding="utf-8") as f:
+        chunks_data = json.load(f)
+
+    chunks = [PaperChunk(**chunk_data) for chunk_data in chunks_data]
+    logger.info(f"Loaded {len(chunks)} chunks")
+    return chunks
+
+
+class RAGPipelineWrapper:
+    """Wrapper for RAG pipeline with UI-specific logic."""
 
     def __init__(self):
-        self.retrieved_chunks: list[PaperChunk] = []
+        self.chunks = load_chunks()
+        if self.chunks:
+            self.pipeline = RAGPipeline(self.chunks)
+            logger.info("RAG Pipeline initialized successfully")
+        else:
+            self.pipeline = None
+            logger.warning("RAG Pipeline not initialized - no chunks available")
 
     def process_query(
         self,
@@ -100,6 +125,7 @@ class MockRAGPipeline:
         Returns:
             Tuple of (answer_text, retrieved_chunks_info)
         """
+        # Validation
         if not query.strip():
             raise ValueError("Please enter a question.")
 
@@ -109,34 +135,45 @@ class MockRAGPipeline:
         if not use_bm25 and not use_dense:
             raise ValueError("Please enable at least one retrieval method (BM25 or Dense).")
 
-        filters = QueryFilters(
-            source=source_filter.lower() if source_filter != "Any" else "any",
-            section=section_filter.lower() if section_filter != "Any" else "any",
+        if not self.pipeline:
+            raise ValueError(
+                "RAG Pipeline not initialized. Please run 'make chunk-data' and 'make index-qdrant' first."
+            )
+
+        # Set LLM API key dynamically
+        from scientific_rag.application.rag.llm_client import llm_client
+
+        # Map provider names to LiteLLM format
+        provider_map = {
+            "Groq": "groq",
+            "OpenRouter": "openrouter",
+            "OpenAI": "openai",
+        }
+
+        llm_provider = provider_map.get(provider, provider.lower())
+        llm_client.api_key = api_key
+        llm_client.provider = llm_provider
+        llm_client.model = model
+
+        # Update query processor expansion count
+        self.pipeline.query_processor.expand_to_n = expansion_count
+
+        # Run pipeline
+        response = self.pipeline.run(
+            query=query,
+            use_self_query=use_self_query,
+            use_query_expansion=use_query_expansion,
+            use_bm25=use_bm25,
+            use_dense=use_dense,
+            use_reranking=use_reranking,
+            retrieval_top_k=top_k,
+            rerank_top_k=min(top_k, 5),  # Rerank top 5 or less
         )
 
-        query_obj = Query(
-            text=query,
-            filters=filters if (source_filter != "Any" or section_filter != "Any") else None,
-            top_k=top_k,
-        )
+        # Format answer with metadata
+        answer = self._format_answer(response, provider, model)
 
-        pipeline_info = []
-        if use_self_query:
-            pipeline_info.append("✓ Self-Query: Extracting metadata filters")
-        if use_query_expansion:
-            pipeline_info.append(f"✓ Query Expansion: Generating {expansion_count} variations")
-        if use_bm25:
-            pipeline_info.append("✓ BM25: Keyword-based retrieval")
-        if use_dense:
-            pipeline_info.append("✓ Dense: Semantic vector search")
-        if use_reranking:
-            pipeline_info.append("✓ Reranking: Cross-encoder scoring")
-
-        mock_chunks = self._generate_mock_chunks(query, filters, top_k)
-        self.retrieved_chunks = mock_chunks
-
-        answer = self._generate_mock_answer(query, mock_chunks, provider, model)
-
+        # Format chunks for display
         chunks_info = [
             {
                 "chunk_id": chunk.chunk_id,
@@ -146,81 +183,41 @@ class MockRAGPipeline:
                 "paper_id": chunk.paper_id,
                 "score": chunk.score,
             }
-            for chunk in mock_chunks
+            for chunk in response.retrieved_chunks
         ]
 
         return answer, chunks_info
 
-    def _generate_mock_chunks(self, query: str, filters: QueryFilters, top_k: int) -> list[PaperChunk]:
-        mock_chunks = []
+    def _format_answer(self, response, provider: str, model: str) -> str:
+        """Format RAG response as markdown."""
+        lines = ["## Answer\n"]
+        lines.append(response.answer)
+        lines.append("\n---\n")
 
-        for i in range(min(top_k, 5)):
-            source = DataSource.ARXIV if filters.source == "any" or filters.source == "arxiv" else DataSource.PUBMED
-            section = (
-                SectionType(filters.section)
-                if filters.section != "any"
-                else [
-                    SectionType.INTRODUCTION,
-                    SectionType.METHODS,
-                    SectionType.RESULTS,
-                    SectionType.CONCLUSION,
-                ][i % 4]
-            )
+        # Add metadata
+        metadata_parts = []
+        if response.generated_query_variations:
+            metadata_parts.append(f"🔍 **Query Variations**: {len(response.generated_query_variations) + 1}")
+        metadata_parts.append(f"📄 **Retrieved Chunks**: {len(response.retrieved_chunks)}")
+        metadata_parts.append(f"⏱️ **Execution Time**: {response.execution_time:.2f}s")
+        metadata_parts.append(f"🤖 **Model**: {provider} / {model}")
 
-            chunk = PaperChunk(
-                chunk_id=f"mock_chunk_{i}",
-                text=f"[Mock content for demonstration] This is a sample text passage from a scientific paper "
-                f"that would be relevant to the query: '{query}'. The actual RAG system will retrieve "
-                f"real content from the scientific papers dataset based on semantic similarity and "
-                f"keyword matching. This chunk is from the {section.value} section of an {source.value} paper.",
-                paper_id=f"paper_{1000 + i}",
-                source=source,
-                section=section,
-                position=i,
-                score=0.95 - (i * 0.1),
-            )
-            mock_chunks.append(chunk)
+        if response.used_filters:
+            filters_str = ", ".join([f"{k}={v}" for k, v in response.used_filters.items() if v != "any"])
+            if filters_str:
+                metadata_parts.append(f"🔎 **Filters**: {filters_str}")
 
-        return mock_chunks
+        lines.append(" | ".join(metadata_parts))
 
-    def _generate_mock_answer(
-        self,
-        query: str,
-        chunks: list[PaperChunk],
-        provider: str,
-        model: str,
-    ) -> str:
-        citations = "\n".join(
-            [
-                f"[{i + 1}] {chunk.text[:100]}... ({chunk.source.value}, {chunk.section.value})"
-                for i, chunk in enumerate(chunks[:3])
-            ]
-        )
-
-        return f"""## Answer
-
-**Note**: This is a demonstration response. The actual RAG system will use {provider}/{model}
-to generate answers based on retrieved scientific paper content.
-
-Based on the retrieved documents, here is what the scientific literature says about your question:
-
-"{query}"
-
-The answer would synthesize information from the retrieved chunks, citing specific sources [1], [2], [3].
-
----
-
-### 📚 Sources
-
-{citations}
-
----
-
-*Pipeline: {provider} / {model}*
-"""
+        return "\n".join(lines)
 
 
-rag_pipeline = MockRAGPipeline()
+# Initialize RAG pipeline
+try:
+    rag_pipeline = RAGPipelineWrapper()
+except Exception as e:
+    logger.error(f"Failed to initialize RAG pipeline: {e}")
+    rag_pipeline = None
 
 
 # =============================================================================
@@ -309,6 +306,8 @@ def format_chunks_display(chunks: list[dict[str, Any]]) -> str:
 def create_demo() -> gr.Blocks:
     with gr.Blocks(title="Scientific RAG System") as demo:
         gr.Markdown(MAIN_HEADER)
+
+        # System status
         gr.Markdown("---")
 
         gr.Markdown("## ⚙️ Configuration")

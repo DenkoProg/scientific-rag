@@ -536,12 +536,11 @@ def main():
         server_port=7860,
         share=False,
         show_error=True,
-        theme=gr.themes.Soft(
-            primary_hue="blue",
-            secondary_hue="slate",
+        theme=gr.themes.Soft(primary_hue="blue", secondary_hue="slate").set(
+            border_color_primary="#ffffff",
         ),
         css="""
-        .gradio-container, .contain, body, .gr-box, .gr-form, .gr-panel {
+        .gradio-container, .contain, body, .gr-box, .gr-form, .gr-panel, .gr-group, .gr-block, .gr-row, .gr-column {
             background: #ffffff !important;
         }
 

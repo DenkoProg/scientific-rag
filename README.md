@@ -133,10 +133,9 @@ Open `http://localhost:7860` in your browser.
 ### 4. Ask Questions!
 
 Try example queries:
-- "What are the main approaches to quantum error correction?"
-- "How do systems enable precise gene editing?"
-- "Explain plasma confinement mechanisms in tokamaks"
-- "What role do protein folding dynamics play in neurodegenerative diseases?"
+- "What are quantum error correction approaches?"
+- "What is plasma confinement in tokamaks?"
+- "When is DNA denaturation?"
 
 ## 📖 Usage Guide
 

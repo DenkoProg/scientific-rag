@@ -58,10 +58,9 @@ Uses the [armanc/scientific_papers](https://huggingface.co/datasets/armanc/scien
 
 ## 💡 Example Questions
 
-- "What are the main approaches to quantum error correction?"
-- "Explain the mechanisms of plasma confinement"
-- "How do systems enable precise gene editing?"
-- "What role do protein folding dynamics play in neurodegenerative diseases?"
+- "What are quantum error correction approaches?"
+- "What is plasma confinement in tokamaks?"
+- "When is DNA denaturation?"
 
 ## 📄 License
 

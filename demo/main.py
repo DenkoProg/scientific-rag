@@ -91,7 +91,7 @@ class RAGPipelineWrapper:
         if not use_bm25 and not use_dense:
             raise ValueError("Please enable at least one retrieval method (BM25 or Dense).")
 
-        if top_k < 1 or top_k > 20:
+        if top_k < 1 or top_k > 50:
             raise ValueError("Top-K must be between 1 and 20.")
 
         if expansion_count < 1 or expansion_count > 5:
@@ -315,30 +315,30 @@ def create_demo() -> gr.Blocks:
                 gr.Markdown("### 📊 Retrieval Parameters")
 
                 top_k = gr.Slider(
-                    label="Top-K Results",
+                    label="Top-K chunks to retrieve",
+                    minimum=1,
+                    maximum=50,
+                    value=20,
+                    step=1,
+                    info="Initial retrieval before reranking",
+                )
+
+                display_chunks = gr.Slider(
+                    label="Top-K chunks after reranking",
                     minimum=1,
                     maximum=20,
-                    value=10,
+                    value=5,
                     step=1,
-                    info="Number of chunks to retrieve",
+                    info="Final chunks to use for answer generation",
                 )
 
                 expansion_count = gr.Slider(
-                    label="Query Expansion Count",
+                    label="Query expansion count",
                     minimum=1,
                     maximum=5,
                     value=3,
                     step=1,
                     info="Number of query variations to generate",
-                )
-
-                display_chunks = gr.Slider(
-                    label="Display Chunks",
-                    minimum=1,
-                    maximum=10,
-                    value=5,
-                    step=1,
-                    info="Number of chunks to display in results",
                 )
 
         gr.Markdown("---")
@@ -420,9 +420,10 @@ Cross-encoder model to improve result relevance
 
         query = gr.Textbox(
             label="Your Question",
-            placeholder="e.g., What are the main approaches to quantum error correction?",
+            placeholder="e.g., What are quantum error correction approaches?",
             lines=3,
             info="Enter your question about scientific papers",
+            elem_id="question_box",
         )
 
         with gr.Row():
@@ -445,11 +446,9 @@ Cross-encoder model to improve result relevance
 
             gr.HTML("""
                 <div class="example-questions-container">
-                    <button class="example-question-badge" onclick="document.querySelector('textarea[placeholder*=\\'protein\\']').parentElement.parentElement.querySelector('textarea').value='What are the main approaches to quantum error correction?'; document.querySelector('textarea[placeholder*=\\'protein\\']').parentElement.parentElement.querySelector('textarea').dispatchEvent(new Event('input', { bubbles: true }))">What are the main approaches to quantum error correction?</button>
-                    <button class="example-question-badge" onclick="document.querySelector('textarea[placeholder*=\\'protein\\']').parentElement.parentElement.querySelector('textarea').value='How do systems enable precise gene editing?'; document.querySelector('textarea[placeholder*=\\'protein\\']').parentElement.parentElement.querySelector('textarea').dispatchEvent(new Event('input', { bubbles: true }))">How do CRISPR-Cas9 systems enable precise gene editing?</button>
-                    <button class="example-question-badge" onclick="document.querySelector('textarea[placeholder*=\\'protein\\']').parentElement.parentElement.querySelector('textarea').value='Explain plasma confinement mechanisms in tokamaks'; document.querySelector('textarea[placeholder*=\\'protein\\']').parentElement.parentElement.querySelector('textarea').dispatchEvent(new Event('input', { bubbles: true }))">Explain plasma confinement mechanisms in tokamaks</button>
-                    <button class="example-question-badge" onclick="document.querySelector('textarea[placeholder*=\\'protein\\']').parentElement.parentElement.querySelector('textarea').value='What role do protein folding dynamics play in diseases?'; document.querySelector('textarea[placeholder*=\\'protein\\']').parentElement.parentElement.querySelector('textarea').dispatchEvent(new Event('input', { bubbles: true }))">What role do protein folding dynamics play in diseases?</button>
-                    <button class="example-question-badge" onclick="document.querySelector('textarea[placeholder*=\\'protein\\']').parentElement.parentElement.querySelector('textarea').value='How do researchers measure quantum entanglement?'; document.querySelector('textarea[placeholder*=\\'protein\\']').parentElement.parentElement.querySelector('textarea').dispatchEvent(new Event('input', { bubbles: true }))">How do researchers measure quantum entanglement?</button>
+                    <button class="example-question-badge" onclick="const ta=document.querySelector('#question_box textarea');if(ta){ta.value='What are quantum error correction approaches?';ta.dispatchEvent(new Event('input',{bubbles:true}));}">What are quantum error correction approaches?</button>
+                    <button class="example-question-badge" onclick="const ta=document.querySelector('#question_box textarea');if(ta){ta.value='What is plasma confinement in tokamaks?';ta.dispatchEvent(new Event('input',{bubbles:true}));}">What is plasma confinement in tokamaks?</button>
+                    <button class="example-question-badge" onclick="const ta=document.querySelector('#question_box textarea');if(ta){ta.value='When is DNA denaturation?';ta.dispatchEvent(new Event('input',{bubbles:true}));}">When is DNA denaturation?</button>
                 </div>
             """)
 

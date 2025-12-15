@@ -8,9 +8,9 @@ from scientific_rag.settings import settings
 
 
 class HybridRetriever:
-    def __init__(self, chunks: list[PaperChunk]):
+    def __init__(self):
         logger.info("Initializing Hybrid Retriever...")
-        self.bm25 = BM25Retriever(chunks)
+        self.bm25 = BM25Retriever()
         self.dense = DenseRetriever()
         logger.info("Hybrid Retriever ready.")
 

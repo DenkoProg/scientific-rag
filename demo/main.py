@@ -55,35 +55,12 @@ LLM_PROVIDERS = {
 }
 
 
-def load_chunks() -> list[PaperChunk]:
-    """Load chunks from processed data file."""
-    chunks_file = Path(settings.root_dir) / "data" / "processed" / f"chunks_{settings.dataset_split}.json"
-
-    if not chunks_file.exists():
-        logger.warning(f"Chunks file not found: {chunks_file}")
-        logger.warning("Please run 'make chunk-data' to generate chunks first.")
-        return []
-
-    logger.info(f"Loading chunks from {chunks_file}")
-    with open(chunks_file, encoding="utf-8") as f:
-        chunks_data = json.load(f)
-
-    chunks = [PaperChunk(**chunk_data) for chunk_data in chunks_data]
-    logger.info(f"Loaded {len(chunks)} chunks")
-    return chunks
-
-
 class RAGPipelineWrapper:
     """Wrapper for RAG pipeline with UI-specific logic."""
 
     def __init__(self):
-        self.chunks = load_chunks()
-        if self.chunks:
-            self.pipeline = RAGPipeline(self.chunks)
-            logger.info("RAG Pipeline initialized successfully")
-        else:
-            self.pipeline = None
-            logger.warning("RAG Pipeline not initialized - no chunks available")
+        self.pipeline = RAGPipeline()
+        logger.info("RAG Pipeline initialized successfully")
 
     def process_query(
         self,

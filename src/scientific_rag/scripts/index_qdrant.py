@@ -1,7 +1,9 @@
 from collections.abc import Iterator
 import json
 from pathlib import Path
+from typing import Any
 
+from fastembed import SparseTextEmbedding
 from loguru import logger
 from tqdm import tqdm
 
@@ -33,8 +35,8 @@ def embed_chunks(
     batch_size: int = 32,
     show_progress: bool = True,
 ) -> list[PaperChunk]:
-    """Embed chunks using the encoder."""
-    logger.info(f"Embedding {len(chunks)} chunks with batch size {batch_size}")
+    """Embed chunks using the dense encoder."""
+    logger.info(f"Embedding {len(chunks)} chunks (Dense) with batch size {batch_size}")
 
     texts = [chunk.text for chunk in chunks]
 
@@ -45,15 +47,33 @@ def embed_chunks(
         show_progress=show_progress,
     )
 
-    for chunk, embedding in zip(chunks, embeddings):
+    for chunk, embedding in zip(chunks, embeddings, strict=False):
         chunk.embedding = embedding
 
-    logger.success(f"Embedded {len(chunks)} chunks")
+    logger.success(f"Generated dense embeddings for {len(chunks)} chunks")
     return chunks
+
+
+def embed_sparse_chunks(
+    chunks: list[PaperChunk],
+    sparse_encoder: SparseTextEmbedding,
+    batch_size: int = 32,
+    show_progress: bool = True,
+) -> list[Any]:
+    """Generate sparse BM25 embeddings for chunks."""
+    logger.info(f"Embedding {len(chunks)} chunks (Sparse BM25) with batch size {batch_size}")
+
+    texts = [chunk.text for chunk in chunks]
+
+    sparse_embeddings = list(sparse_encoder.embed(documents=texts, batch_size=batch_size, parallel=None))
+
+    logger.success(f"Generated sparse embeddings for {len(chunks)} chunks")
+    return sparse_embeddings
 
 
 def index_chunks_to_qdrant(
     chunks: list[PaperChunk],
+    sparse_embeddings: list[Any],
     qdrant_service: QdrantService,
     batch_size: int = 100,
     show_progress: bool = True,
@@ -63,8 +83,13 @@ def index_chunks_to_qdrant(
 
     iterator = tqdm(range(0, len(chunks), batch_size), desc="Uploading to Qdrant", disable=not show_progress)
     for i in iterator:
-        batch = chunks[i : i + batch_size]
-        uploaded = qdrant_service.upsert_chunks(batch)
+        batch_chunks = chunks[i : i + batch_size]
+
+        batch_sparse = None
+        if sparse_embeddings:
+            batch_sparse = sparse_embeddings[i : i + batch_size]
+
+        uploaded = qdrant_service.upsert_chunks(batch_chunks, sparse_embeddings=batch_sparse)
         total_uploaded += uploaded
 
     return total_uploaded
@@ -98,6 +123,9 @@ def index_qdrant(
     if create_collection:
         qdrant_service.create_collection(vector_size=encoder.embedding_dim)
 
+    logger.info(f"Initializing Sparse Encoder: {settings.sparse_embedding_model_name}")
+    sparse_encoder = SparseTextEmbedding(model_name=settings.sparse_embedding_model_name)
+
     logger.info("Processing chunks in streaming batches to manage memory...")
     total_uploaded = 0
     batch_num = 0
@@ -107,16 +135,25 @@ def index_qdrant(
         batch_start = (batch_num - 1) * process_batch_size
         batch_end = batch_start + len(batch_chunks)
 
-        logger.info(f"Batch {batch_num}: Embedding chunks {batch_start}-{batch_end} ({len(batch_chunks)} chunks)...")
+        logger.info(f"--- Processing Batch {batch_num} (Chunks {batch_start}-{batch_end}) ---")
+
         batch_chunks = embed_chunks(
             chunks=batch_chunks,
             batch_size=embedding_batch_size,
             show_progress=True,
         )
 
-        logger.info(f"Batch {batch_num}: Uploading chunks {batch_start}-{batch_end} to Qdrant...")
+        batch_sparse = embed_sparse_chunks(
+            chunks=batch_chunks,
+            sparse_encoder=sparse_encoder,
+            batch_size=embedding_batch_size,
+            show_progress=True,
+        )
+
+        logger.info(f"Batch {batch_num}: Uploading chunks to Qdrant...")
         batch_uploaded = index_chunks_to_qdrant(
             chunks=batch_chunks,
+            sparse_embeddings=batch_sparse,
             qdrant_service=qdrant_service,
             batch_size=upload_batch_size,
             show_progress=True,

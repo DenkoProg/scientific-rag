@@ -1,8 +1,22 @@
+from collections.abc import Sequence
 from typing import Any
 
+from fastembed import SparseTextEmbedding
 from loguru import logger
 from qdrant_client import QdrantClient as SyncQdrantClient
-from qdrant_client.models import Distance, FieldCondition, Filter, MatchValue, PointStruct, VectorParams
+from qdrant_client.models import (
+    Distance,
+    FieldCondition,
+    Filter,
+    MatchValue,
+    Modifier,
+    NamedSparseVector,
+    PointStruct,
+    SparseIndexParams,
+    SparseVector,
+    SparseVectorParams,
+    VectorParams,
+)
 
 from scientific_rag.domain.documents import PaperChunk
 from scientific_rag.domain.queries import QueryFilters
@@ -23,10 +37,20 @@ class QdrantService:
             logger.info(f"Collection '{self.collection_name}' already exists")
             return
 
-        logger.info(f"Creating collection '{self.collection_name}' with vector size {vector_size}")
+        logger.info(f"Creating collection '{self.collection_name}' with dense and sparse vectors")
         self.client.create_collection(
             collection_name=self.collection_name,
-            vectors_config=VectorParams(size=vector_size, distance=distance),
+            vectors_config={
+                "dense": VectorParams(size=vector_size, distance=distance),
+            },
+            sparse_vectors_config={
+                "bm25": SparseVectorParams(
+                    index=SparseIndexParams(
+                        on_disk=True,
+                    ),
+                    modifier=Modifier.IDF,
+                )
+            },
         )
 
         for field in ["source", "section", "paper_id"]:
@@ -37,31 +61,28 @@ class QdrantService:
             )
         logger.info(f"Collection '{self.collection_name}' created with indexes")
 
-    def get_collection_info(self) -> dict[str, Any]:
-        if not self.client.collection_exists(self.collection_name):
-            return {"exists": False}
-
-        info = self.client.get_collection(self.collection_name)
-        return {
-            "exists": True,
-            "indexed_vectors_count": info.indexed_vectors_count,
-            "points_count": info.points_count,
-            "status": info.status,
-        }
-
-    def upsert_chunks(self, chunks: list[PaperChunk]) -> int:
+    def upsert_chunks(self, chunks: list[PaperChunk], sparse_embeddings: list[Any] | None = None) -> int:
         if not chunks:
             return 0
 
-        points = [
-            PointStruct(
-                id=chunk.chunk_id,
-                vector=chunk.embedding,
-                payload=chunk.to_dict(),
+        points = []
+        for i, chunk in enumerate(chunks):
+            if chunk.embedding is None:
+                continue
+
+            vectors = {"dense": chunk.embedding}
+
+            if sparse_embeddings and i < len(sparse_embeddings):
+                sparse = sparse_embeddings[i]
+                vectors["bm25"] = SparseVector(indices=sparse.indices.tolist(), values=sparse.values.tolist())
+
+            points.append(
+                PointStruct(
+                    id=chunk.chunk_id,
+                    vector=vectors,
+                    payload=chunk.to_dict(),
+                )
             )
-            for chunk in chunks
-            if chunk.embedding is not None
-        ]
 
         self.client.upload_points(
             collection_name=self.collection_name,
@@ -72,21 +93,59 @@ class QdrantService:
         logger.info(f"Uploaded {len(points)} chunks to Qdrant")
         return len(points)
 
-    def search(
+    def search_dense(
         self,
         query_vector: list[float],
         limit: int = 10,
-        score_threshold: float | None = None,
         filters: QueryFilters | None = None,
+    ) -> list[PaperChunk]:
+        """Standard semantic search using dense vectors."""
+        return self._execute_search(
+            vector_name="dense",
+            vector_data=query_vector,
+            is_sparse=False,
+            limit=limit,
+            filters=filters,
+        )
+
+    def search_sparse(
+        self,
+        query_sparse_indices: list[int],
+        query_sparse_values: list[float],
+        limit: int = 10,
+        filters: QueryFilters | None = None,
+    ) -> list[PaperChunk]:
+        """BM25-style search using sparse vectors."""
+        sparse_vec = SparseVector(
+            indices=query_sparse_indices,
+            values=query_sparse_values,
+        )
+
+        return self._execute_search(
+            vector_name="bm25",
+            vector_data=sparse_vec,
+            is_sparse=True,
+            limit=limit,
+            filters=filters,
+        )
+
+    def _execute_search(
+        self,
+        vector_name: str,
+        vector_data: Any,
+        is_sparse: bool,
+        limit: int,
+        filters: QueryFilters | None,
     ) -> list[PaperChunk]:
         query_filter = self._build_filters(filters) if filters else None
 
         results = self.client.query_points(
             collection_name=self.collection_name,
-            query=query_vector,
-            limit=limit,
-            score_threshold=score_threshold,
+            using=vector_name,
+            query=vector_data,
             query_filter=query_filter,
+            limit=limit,
+            with_payload=True,
         )
 
         return [
@@ -104,7 +163,6 @@ class QdrantService:
             return None
 
         must_conditions = []
-
         target_list = filter_dict.get("must", []) if "must" in filter_dict else [filter_dict]
 
         for item in target_list:
@@ -113,7 +171,13 @@ class QdrantService:
 
         return Filter(must=must_conditions) if must_conditions else None
 
-    def close(self) -> None:
+    def get_collection_info(self) -> dict[str, Any]:
+        if not self.client.collection_exists(self.collection_name):
+            return {"exists": False}
+        info = self.client.get_collection(self.collection_name)
+        return {"exists": True, "points_count": info.points_count}
+
+    def close(self):
         self.client.close()
         logger.info("Qdrant client closed")
 

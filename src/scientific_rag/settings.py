@@ -25,6 +25,7 @@ class AppSettings(BaseSettings):
 
     # Embeddings
     embedding_model_name: str = "intfloat/e5-small-v2"
+    sparse_embedding_model_name: str = "Qdrant/bm25"
     embedding_batch_size: int = 32
     embedding_device: str = "cpu"  # or "cuda"
 

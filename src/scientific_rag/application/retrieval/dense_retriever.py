@@ -19,6 +19,6 @@ class DenseRetriever:
             logger.error(f"Failed to generate embedding for query: {e}")
             return []
 
-        results = qdrant_service.search(query_vector=query_vector, limit=k, filters=filters)
+        results = qdrant_service.search_dense(query_vector=query_vector, limit=k, filters=filters)
 
         return results

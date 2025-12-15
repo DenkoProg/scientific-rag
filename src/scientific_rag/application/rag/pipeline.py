@@ -13,11 +13,11 @@ from scientific_rag.settings import settings
 
 
 class RAGPipeline:
-    def __init__(self, chunks: list[PaperChunk]):
+    def __init__(self):
         logger.info("Initializing RAG Pipeline...")
 
         self.query_processor = QueryProcessor(expand_to_n=3)
-        self.retriever = HybridRetriever(chunks)
+        self.retriever = HybridRetriever()
 
         self.reranker = reranker
         self.llm = llm_client

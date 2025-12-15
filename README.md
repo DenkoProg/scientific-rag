@@ -134,9 +134,9 @@ Open `http://localhost:7860` in your browser.
 
 Try example queries:
 - "What are the main approaches to quantum error correction?"
-- "How do researchers measure quantum entanglement?"
+- "How do systems enable precise gene editing?"
 - "Explain plasma confinement mechanisms in tokamaks"
-- "What are the challenges in achieving nuclear fusion plasma stability?"
+- "What role do protein folding dynamics play in neurodegenerative diseases?"
 
 ## 📖 Usage Guide
 

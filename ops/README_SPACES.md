@@ -59,9 +59,9 @@ Uses the [armanc/scientific_papers](https://huggingface.co/datasets/armanc/scien
 ## 💡 Example Questions
 
 - "What are the main approaches to quantum error correction?"
-- "Explain the mechanisms of plasma confinement in tokamaks"
-- "How do quantum entanglement experiments validate Bell's inequality?"
-- "What are the challenges in achieving nuclear fusion plasma stability?"
+- "Explain the mechanisms of plasma confinement"
+- "How do systems enable precise gene editing?"
+- "What role do protein folding dynamics play in neurodegenerative diseases?"
 
 ## 📄 License
 

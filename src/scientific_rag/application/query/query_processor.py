@@ -33,19 +33,14 @@ class QueryProcessor:
         section = "any"
 
         query_lower = query.lower()
-        cleaned_query = query
 
+        # 1. Detect Source (without modifying query)
         if "arxiv" in query_lower:
             source = "arxiv"
-            cleaned_query = re.sub(
-                r"\b(from|in|on)?\s*arxiv\s*(papers|articles)?\b", "", cleaned_query, flags=re.IGNORECASE
-            )
         elif "pubmed" in query_lower:
             source = "pubmed"
-            cleaned_query = re.sub(
-                r"\b(from|in|on)?\s*pubmed\s*(papers|articles)?\b", "", cleaned_query, flags=re.IGNORECASE
-            )
 
+        # 2. Detect Section (without modifying query)
         section_patterns = {
             "introduction": [r"introduction", r"intro"],
             "methods": [r"methods", r"methodology", r"experiment setup"],
@@ -58,18 +53,17 @@ class QueryProcessor:
             if found_section:
                 break
             for pattern in patterns:
+                # We keep the regex check to ensure we match the specific context
+                # (e.g. "in methods section") rather than just the word appearing randomly.
                 full_pattern = rf"\b(in|from|check|read)?\s*(the)?\s*{pattern}\s*(section)?\b"
+
                 if re.search(full_pattern, query_lower):
                     section = sec_name
-                    cleaned_query = re.sub(full_pattern, "", cleaned_query, flags=re.IGNORECASE)
                     found_section = True
                     break
 
-        cleaned_query = " ".join(cleaned_query.split())
-        if not cleaned_query:
-            cleaned_query = query
-
-        return cleaned_query, QueryFilters(source=source, section=section)
+        # Return the original 'query' unmodified
+        return query, QueryFilters(source=source, section=section)
 
     def _expand_query(self, query: str) -> list[str]:
         if not settings.llm_api_key:

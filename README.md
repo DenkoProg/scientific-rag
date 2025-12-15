@@ -133,9 +133,10 @@ Open `http://localhost:7860` in your browser.
 ### 4. Ask Questions!
 
 Try example queries:
-- "What methods are used for protein structure prediction?"
+- "What are the main approaches to quantum error correction?"
 - "How do researchers measure quantum entanglement?"
-- "What are the main findings about CRISPR gene editing?"
+- "Explain plasma confinement mechanisms in tokamaks"
+- "What are the challenges in achieving nuclear fusion plasma stability?"
 
 ## 📖 Usage Guide
 
@@ -200,12 +201,19 @@ RERANK_TOP_K=5
 
 # Embeddings
 EMBEDDING_MODEL_NAME=intfloat/e5-small-v2
-EMBEDDING_DEVICE=cpu             # or cuda
+EMBEDDING_DEVICE=cpu             # or cuda/mps
 
 # Qdrant
 QDRANT_URL=http://localhost:6333
 QDRANT_COLLECTION_NAME=scientific_papers
 ```
+
+## 🚀 Deployment
+
+Want to deploy for free? See the [ops/](ops/) folder:
+- **[ops/QUICK_START.md](ops/QUICK_START.md)** - Deploy in 3 commands
+- **[ops/DEPLOYMENT.md](ops/DEPLOYMENT.md)** - Full deployment guide
+- **[ops/README_SPACES.md](ops/README_SPACES.md)** - HF Spaces README template
 
 ## 🎯 Retrieval Comparison
 

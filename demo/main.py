@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 import sys
 from typing import Any
@@ -6,6 +7,11 @@ from typing import Any
 import gradio as gr
 from loguru import logger
 
+
+# Auto-configure for HF Spaces
+if os.getenv("SPACE_ID"):  # Detect HF Spaces environment
+    os.environ.setdefault("QDRANT_URL", ":memory:")
+    logger.info("🚀 Running on Hugging Face Spaces with in-memory Qdrant")
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
@@ -437,7 +443,7 @@ Cross-encoder model to improve result relevance
 
         query = gr.Textbox(
             label="Your Question",
-            placeholder="e.g., What methods are used for protein structure prediction?",
+            placeholder="e.g., What are the main approaches to quantum error correction?",
             lines=3,
             info="Enter your question about scientific papers",
         )
@@ -462,11 +468,11 @@ Cross-encoder model to improve result relevance
 
             gr.HTML("""
                 <div class="example-questions-container">
-                    <button class="example-question-badge" onclick="document.querySelector('textarea[placeholder*=\\'protein\\']').parentElement.parentElement.querySelector('textarea').value='What methods are used for protein structure prediction?'; document.querySelector('textarea[placeholder*=\\'protein\\']').parentElement.parentElement.querySelector('textarea').dispatchEvent(new Event('input', { bubbles: true }))">What methods are used for protein structure prediction?</button>
+                    <button class="example-question-badge" onclick="document.querySelector('textarea[placeholder*=\\'protein\\']').parentElement.parentElement.querySelector('textarea').value='What are the main approaches to quantum error correction?'; document.querySelector('textarea[placeholder*=\\'protein\\']').parentElement.parentElement.querySelector('textarea').dispatchEvent(new Event('input', { bubbles: true }))">What are the main approaches to quantum error correction?</button>
                     <button class="example-question-badge" onclick="document.querySelector('textarea[placeholder*=\\'protein\\']').parentElement.parentElement.querySelector('textarea').value='How do researchers measure quantum entanglement?'; document.querySelector('textarea[placeholder*=\\'protein\\']').parentElement.parentElement.querySelector('textarea').dispatchEvent(new Event('input', { bubbles: true }))">How do researchers measure quantum entanglement?</button>
-                    <button class="example-question-badge" onclick="document.querySelector('textarea[placeholder*=\\'protein\\']').parentElement.parentElement.querySelector('textarea').value='What are the main findings about CRISPR gene editing?'; document.querySelector('textarea[placeholder*=\\'protein\\']').parentElement.parentElement.querySelector('textarea').dispatchEvent(new Event('input', { bubbles: true }))">What are the main findings about CRISPR gene editing?</button>
-                    <button class="example-question-badge" onclick="document.querySelector('textarea[placeholder*=\\'protein\\']').parentElement.parentElement.querySelector('textarea').value='Explain the methodology for clinical trials in cancer treatment'; document.querySelector('textarea[placeholder*=\\'protein\\']').parentElement.parentElement.querySelector('textarea').dispatchEvent(new Event('input', { bubbles: true }))">Explain the methodology for clinical trials in cancer treatment</button>
-                    <button class="example-question-badge" onclick="document.querySelector('textarea[placeholder*=\\'protein\\']').parentElement.parentElement.querySelector('textarea').value='What machine learning techniques are used in medical imaging?'; document.querySelector('textarea[placeholder*=\\'protein\\']').parentElement.parentElement.querySelector('textarea').dispatchEvent(new Event('input', { bubbles: true }))">What machine learning techniques are used in medical imaging?</button>
+                    <button class="example-question-badge" onclick="document.querySelector('textarea[placeholder*=\\'protein\\']').parentElement.parentElement.querySelector('textarea').value='Explain plasma confinement mechanisms in tokamaks'; document.querySelector('textarea[placeholder*=\\'protein\\']').parentElement.parentElement.querySelector('textarea').dispatchEvent(new Event('input', { bubbles: true }))">Explain plasma confinement mechanisms in tokamaks</button>
+                    <button class="example-question-badge" onclick="document.querySelector('textarea[placeholder*=\\'protein\\']').parentElement.parentElement.querySelector('textarea').value='What are the challenges in achieving nuclear fusion plasma stability?'; document.querySelector('textarea[placeholder*=\\'protein\\']').parentElement.parentElement.querySelector('textarea').dispatchEvent(new Event('input', { bubbles: true }))">What are the challenges in achieving nuclear fusion plasma stability?</button>
+                    <button class="example-question-badge" onclick="document.querySelector('textarea[placeholder*=\\'protein\\']').parentElement.parentElement.querySelector('textarea').value='How do superconducting qubits maintain quantum coherence?'; document.querySelector('textarea[placeholder*=\\'protein\\']').parentElement.parentElement.querySelector('textarea').dispatchEvent(new Event('input', { bubbles: true }))">How do superconducting qubits maintain quantum coherence?</button>
                 </div>
             """)
 

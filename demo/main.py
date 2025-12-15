@@ -152,7 +152,7 @@ class RAGPipelineWrapper:
         chunks_info = [
             {
                 "chunk_id": chunk.chunk_id,
-                "text": chunk.text[:500] + "..." if len(chunk.text) > 500 else chunk.text,
+                "text": chunk.text,
                 "source": chunk.source.value,
                 "section": chunk.section.value,
                 "paper_id": chunk.paper_id,
@@ -247,7 +247,7 @@ def process_query(
 
         return (
             answer,
-            chunks_display,
+            gr.update(value=chunks_display),
             gr.update(visible=False),
             gr.update(visible=True),
             gr.update(value="", visible=False),
@@ -255,10 +255,22 @@ def process_query(
 
     except ValueError as e:
         error_msg = f"⚠️ **Input Error**: {str(e)}"
-        return error_msg, "", gr.update(visible=False), gr.update(visible=True), gr.update(value="", visible=False)
+        return (
+            error_msg,
+            gr.update(value=""),
+            gr.update(visible=False),
+            gr.update(visible=True),
+            gr.update(value="", visible=False),
+        )
     except Exception as e:
         error_msg = f"❌ **Error**: {str(e)}"
-        return error_msg, "", gr.update(visible=False), gr.update(visible=True), gr.update(value="", visible=False)
+        return (
+            error_msg,
+            gr.update(value=""),
+            gr.update(visible=False),
+            gr.update(visible=True),
+            gr.update(value="", visible=False),
+        )
 
 
 def format_chunks_display(chunks: list[dict[str, Any]]) -> str:
@@ -468,12 +480,13 @@ Cross-encoder model to improve result relevance
                 elem_classes="answer-content",
             )
 
-            with gr.Accordion("📚 Retrieved Chunks", open=False, elem_classes="chunks-accordion"):
-                chunks_output = gr.Markdown(
-                    label="Chunks",
-                    value="",
-                    show_label=False,
-                )
+            gr.Markdown("### 📚 Retrieved Chunks")
+            chunks_output = gr.Markdown(
+                label="Chunks",
+                value="",
+                show_label=False,
+                elem_id="chunks-display",
+            )
 
         provider.change(
             fn=update_models,
@@ -483,8 +496,8 @@ Cross-encoder model to improve result relevance
 
         submit_btn.click(
             fn=lambda *args: (
-                gr.update(value=""),
-                gr.update(value=""),
+                "",
+                "",
                 gr.update(visible=False),
                 gr.update(visible=False),
                 gr.update(

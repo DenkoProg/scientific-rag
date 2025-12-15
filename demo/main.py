@@ -37,15 +37,6 @@ This system allows you to ask questions about scientific papers and receive answ
 # =============================================================================
 
 LLM_PROVIDERS = {
-    "Groq": {
-        "models": [
-            "llama-3.1-8b-instant",
-            "llama-3.1-70b-versatile",
-            "mixtral-8x7b-32768",
-            "gemma2-9b-it",
-        ],
-        "default": "llama-3.1-8b-instant",
-    },
     "OpenRouter": {
         "models": [
             "openai/gpt-3.5-turbo",
@@ -55,6 +46,15 @@ LLM_PROVIDERS = {
             "google/gemma-2-9b-it:free",
         ],
         "default": "meta-llama/llama-3.3-70b-instruct:free",
+    },
+    "Groq": {
+        "models": [
+            "llama-3.1-8b-instant",
+            "llama-3.1-70b-versatile",
+            "mixtral-8x7b-32768",
+            "gemma2-9b-it",
+        ],
+        "default": "llama-3.1-8b-instant",
     },
     "OpenAI": {
         "models": [
@@ -190,24 +190,28 @@ class RAGPipelineWrapper:
 
     def _format_answer(self, response, provider: str, model: str) -> str:
         """Format RAG response as markdown."""
-        lines = ["## Answer\n"]
+        lines = []
         lines.append(response.answer)
-        lines.append("\n---\n")
+        lines.append("\n\n")
 
-        # Add metadata
-        metadata_parts = []
+        # Add metadata as badges
+        metadata_badges = []
         if response.generated_query_variations:
-            metadata_parts.append(f"🔍 **Query Variations**: {len(response.generated_query_variations) + 1}")
-        metadata_parts.append(f"📄 **Retrieved Chunks**: {len(response.retrieved_chunks)}")
-        metadata_parts.append(f"⏱️ **Execution Time**: {response.execution_time:.2f}s")
-        metadata_parts.append(f"🤖 **Model**: {provider} / {model}")
+            metadata_badges.append(
+                f'<span class="metadata-badge">🔍 Query Variations: {len(response.generated_query_variations) + 1}</span>'
+            )
+        metadata_badges.append(
+            f'<span class="metadata-badge">📄 Retrieved Chunks: {len(response.retrieved_chunks)}</span>'
+        )
+        metadata_badges.append(f'<span class="metadata-badge">⏱️ Execution Time: {response.execution_time:.2f}s</span>')
+        metadata_badges.append(f'<span class="metadata-badge">🤖 Model: {provider} / {model}</span>')
 
         if response.used_filters:
             filters_str = ", ".join([f"{k}={v}" for k, v in response.used_filters.items() if v != "any"])
             if filters_str:
-                metadata_parts.append(f"🔎 **Filters**: {filters_str}")
+                metadata_badges.append(f'<span class="metadata-badge">🔎 Filters: {filters_str}</span>')
 
-        lines.append(" | ".join(metadata_parts))
+        lines.append('<div class="metadata-container">' + " ".join(metadata_badges) + "</div>")
 
         return "\n".join(lines)
 
@@ -247,7 +251,7 @@ def process_query(
     use_reranking: bool,
     top_k: int,
     expansion_count: int,
-) -> tuple[str, str, gr.update, gr.update]:
+) -> tuple[str, str, gr.update, gr.update, gr.update]:
     try:
         answer, chunks = rag_pipeline.process_query(
             query=query,
@@ -267,21 +271,27 @@ def process_query(
 
         chunks_display = format_chunks_display(chunks)
 
-        return answer, chunks_display, gr.update(visible=False), gr.update(visible=True)
+        return (
+            answer,
+            chunks_display,
+            gr.update(visible=False),
+            gr.update(visible=True),
+            gr.update(value="", visible=False),
+        )
 
     except ValueError as e:
         error_msg = f"⚠️ **Input Error**: {str(e)}"
-        return error_msg, "", gr.update(visible=False), gr.update(visible=True)
+        return error_msg, "", gr.update(visible=False), gr.update(visible=True), gr.update(value="", visible=False)
     except Exception as e:
         error_msg = f"❌ **Error**: {str(e)}"
-        return error_msg, "", gr.update(visible=False), gr.update(visible=True)
+        return error_msg, "", gr.update(visible=False), gr.update(visible=True), gr.update(value="", visible=False)
 
 
 def format_chunks_display(chunks: list[dict[str, Any]]) -> str:
     if not chunks:
         return "No chunks retrieved."
 
-    lines = ["## 📄 Retrieved Chunks\n"]
+    lines = []
 
     for i, chunk in enumerate(chunks, 1):
         score_display = f"{chunk['score']:.3f}" if chunk.get("score") else "N/A"
@@ -320,20 +330,21 @@ def create_demo() -> gr.Blocks:
                     label="API Key",
                     placeholder="Enter your API key here...",
                     type="password",
+                    value="",
                     info="Your API key is not stored and only used for this session",
                 )
 
                 provider = gr.Dropdown(
                     label="LLM Provider",
                     choices=list(LLM_PROVIDERS.keys()),
-                    value="Groq",
+                    value="OpenRouter",
                     info="Select your LLM provider",
                 )
 
                 model = gr.Dropdown(
                     label="Model",
-                    choices=LLM_PROVIDERS["Groq"]["models"],
-                    value=LLM_PROVIDERS["Groq"]["default"],
+                    choices=LLM_PROVIDERS["OpenRouter"]["models"],
+                    value=LLM_PROVIDERS["OpenRouter"]["default"],
                     info="Select the model to use",
                 )
 
@@ -459,42 +470,49 @@ Cross-encoder model to improve result relevance
             info="Enter your question about scientific papers",
         )
 
-        submit_btn = gr.Button(
-            "🔍 Search & Generate Answer",
-            variant="primary",
-            size="lg",
-        )
-
-        clear_btn = gr.Button(
-            "🗑️ Clear",
-            variant="secondary",
-        )
-
-        with gr.Group(visible=True) as examples_section:
-            gr.Examples(
-                examples=[
-                    ["What methods are used for protein structure prediction?"],
-                    ["How do researchers measure quantum entanglement?"],
-                    ["What are the main findings about CRISPR gene editing?"],
-                    ["Explain the methodology for clinical trials in cancer treatment"],
-                    ["What machine learning techniques are used in medical imaging?"],
-                ],
-                inputs=[query],
-                label="📝 Example Questions",
+        with gr.Row():
+            submit_btn = gr.Button(
+                "🔍 Search & Generate Answer",
+                variant="primary",
+                size="lg",
             )
 
-        with gr.Group(visible=False) as answer_section:
-            gr.Markdown("## 📝 Answer")
+            clear_btn = gr.Button(
+                "🗑️ Clear",
+                variant="secondary",
+            )
+
+        with gr.Row():
+            loading_status = gr.Markdown(value="", visible=False, elem_classes="loading-indicator")
+
+        with gr.Group(visible=True, elem_classes="examples-section") as examples_section:
+            gr.Markdown("## 📝 Example Questions")
+
+            gr.HTML("""
+                <div class="example-questions-container">
+                    <button class="example-question-badge" onclick="document.querySelector('textarea[placeholder*=\\'protein\\']').parentElement.parentElement.querySelector('textarea').value='What methods are used for protein structure prediction?'; document.querySelector('textarea[placeholder*=\\'protein\\']').parentElement.parentElement.querySelector('textarea').dispatchEvent(new Event('input', { bubbles: true }))">What methods are used for protein structure prediction?</button>
+                    <button class="example-question-badge" onclick="document.querySelector('textarea[placeholder*=\\'protein\\']').parentElement.parentElement.querySelector('textarea').value='How do researchers measure quantum entanglement?'; document.querySelector('textarea[placeholder*=\\'protein\\']').parentElement.parentElement.querySelector('textarea').dispatchEvent(new Event('input', { bubbles: true }))">How do researchers measure quantum entanglement?</button>
+                    <button class="example-question-badge" onclick="document.querySelector('textarea[placeholder*=\\'protein\\']').parentElement.parentElement.querySelector('textarea').value='What are the main findings about CRISPR gene editing?'; document.querySelector('textarea[placeholder*=\\'protein\\']').parentElement.parentElement.querySelector('textarea').dispatchEvent(new Event('input', { bubbles: true }))">What are the main findings about CRISPR gene editing?</button>
+                    <button class="example-question-badge" onclick="document.querySelector('textarea[placeholder*=\\'protein\\']').parentElement.parentElement.querySelector('textarea').value='Explain the methodology for clinical trials in cancer treatment'; document.querySelector('textarea[placeholder*=\\'protein\\']').parentElement.parentElement.querySelector('textarea').dispatchEvent(new Event('input', { bubbles: true }))">Explain the methodology for clinical trials in cancer treatment</button>
+                    <button class="example-question-badge" onclick="document.querySelector('textarea[placeholder*=\\'protein\\']').parentElement.parentElement.querySelector('textarea').value='What machine learning techniques are used in medical imaging?'; document.querySelector('textarea[placeholder*=\\'protein\\']').parentElement.parentElement.querySelector('textarea').dispatchEvent(new Event('input', { bubbles: true }))">What machine learning techniques are used in medical imaging?</button>
+                </div>
+            """)
+
+        with gr.Group(visible=False, elem_classes="answer-section") as answer_section:
+            gr.Markdown("## 💡 Your Answer")
 
             answer_output = gr.Markdown(
-                label="Generated Answer",
+                label="Answer",
                 value="",
+                show_label=False,
+                elem_classes="answer-content",
             )
 
-            with gr.Accordion("📄 Retrieved Chunks", open=False):
+            with gr.Accordion("📚 Retrieved Chunks", open=False, elem_classes="chunks-accordion"):
                 chunks_output = gr.Markdown(
-                    label="Retrieved Chunks",
+                    label="Chunks",
                     value="",
+                    show_label=False,
                 )
 
         provider.change(
@@ -504,6 +522,19 @@ Cross-encoder model to improve result relevance
         )
 
         submit_btn.click(
+            fn=lambda *args: (
+                gr.update(value=""),
+                gr.update(value=""),
+                gr.update(visible=False),
+                gr.update(visible=False),
+                gr.update(
+                    value="<div style='text-align: center; padding: 50px;'><h2 style='color: #1f2937; font-size: 22px; margin-bottom: 12px; font-weight: 600;'>Processing your query...</h2><p style='font-size: 15px; color: #4b5563;'>Retrieving relevant papers and generating answer</p></div>",
+                    visible=True,
+                ),
+            ),
+            inputs=[],
+            outputs=[answer_output, chunks_output, examples_section, answer_section, loading_status],
+        ).then(
             fn=process_query,
             inputs=[
                 query,
@@ -520,13 +551,20 @@ Cross-encoder model to improve result relevance
                 top_k,
                 expansion_count,
             ],
-            outputs=[answer_output, chunks_output, examples_section, answer_section],
+            outputs=[answer_output, chunks_output, examples_section, answer_section, loading_status],
         )
 
         clear_btn.click(
-            fn=lambda: ("", "", "", gr.update(visible=True), gr.update(visible=False)),
+            fn=lambda: (
+                "",
+                "",
+                "",
+                gr.update(visible=True),
+                gr.update(visible=False),
+                gr.update(value="", visible=False),
+            ),
             inputs=[],
-            outputs=[query, answer_output, chunks_output, examples_section, answer_section],
+            outputs=[query, answer_output, chunks_output, examples_section, answer_section, loading_status],
         )
 
     return demo
@@ -549,10 +587,123 @@ def main():
             secondary_hue="slate",
         ),
         css="""
+        /* Global background override - remove all grey backgrounds */
+        .gradio-container, .contain, body, .gr-box, .gr-form, .gr-panel {
+            background: #ffffff !important;
+        }
+
         .main-header { text-align: center; margin-bottom: 20px; }
         .config-section { border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; margin: 10px 0; }
         .output-section { min-height: 300px; }
         .pipeline-component { padding: 10px; border-bottom: 1px solid #f0f0f0; }
+
+        /* Example Questions Section Styles */
+        .examples-section {
+            background-color: transparent !important;
+            background: #ffffff !important;
+            border: 1px solid #d1d5db !important;
+            border-radius: 8px !important;
+            padding: 24px !important;
+            margin: 20px 0 !important;
+        }
+
+        .examples-section h2 {
+            font-size: 20px !important;
+            font-weight: 600 !important;
+            color: #1f2937 !important;
+            margin-bottom: 20px !important;
+            background: transparent !important;
+        }
+
+        .example-questions-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+            background: transparent !important;
+            padding: 0 !important;
+        }
+
+        .example-question-badge {
+            display: inline-block;
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 8px 14px;
+            border-radius: 16px;
+            font-size: 14px;
+            font-weight: 500;
+            border: 1px solid #93c5fd;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .example-question-badge:hover {
+            background: #bfdbfe;
+            border-color: #60a5fa;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+        }
+
+        /* Loading indicator styles */
+        .loading-indicator {
+            background: #ffffff;
+            border: 2px solid #667eea;
+            color: #1f2937;
+            padding: 50px 20px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 16px;
+            font-weight: 500;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            min-height: 200px;
+        }
+
+        /* Answer container styles - matching Your Question style */
+        .answer-container {
+            margin-top: 20px;
+        }
+
+        .answer-content {
+            background: #ffffff;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 20px;
+            font-size: 15px;
+            line-height: 1.7;
+            color: #1f2937;
+            min-height: 150px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Chunks accordion styling */
+        .chunks-accordion {
+            background: #ffffff !important;
+            border: 1px solid #d1d5db !important;
+            border-radius: 8px !important;
+            margin-top: 16px !important;
+        }
+
+        /* Metadata badges */
+        .metadata-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .metadata-badge {
+            display: inline-block;
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 13px;
+            font-weight: 500;
+            border: 1px solid #93c5fd;
+        }
+
         footer { display: none !important; }
         """,
     )

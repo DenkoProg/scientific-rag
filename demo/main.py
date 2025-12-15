@@ -16,10 +16,6 @@ from scientific_rag.domain.types import DataSource, SectionType
 from scientific_rag.settings import settings
 
 
-# =============================================================================
-# Service Description
-# =============================================================================
-
 MAIN_HEADER = """
 <div style="text-align: center; margin-bottom: 40px;">
 
@@ -32,45 +28,25 @@ This system allows you to ask questions about scientific papers and receive answ
 </div>
 """
 
-# =============================================================================
-# LLM Provider Configuration
-# =============================================================================
-
 LLM_PROVIDERS = {
     "OpenRouter": {
         "models": [
-            "openai/gpt-3.5-turbo",
-            "openai/gpt-4o-mini",
-            "anthropic/claude-3-haiku",
             "meta-llama/llama-3.3-70b-instruct:free",
-            "google/gemma-2-9b-it:free",
+            "amazon/nova-2-lite-v1:free",
+            "qwen/qwen3-235b-a22b:free",
+            "openai/gpt-oss-120b:free",
         ],
         "default": "meta-llama/llama-3.3-70b-instruct:free",
     },
     "Groq": {
         "models": [
-            "llama-3.1-8b-instant",
-            "llama-3.1-70b-versatile",
-            "mixtral-8x7b-32768",
-            "gemma2-9b-it",
+            "groq/llama-3.1-8b-instant",
+            "groq/openai/gpt-oss-120b",
+            "groq/qwen/qwen3-32b",
         ],
-        "default": "llama-3.1-8b-instant",
-    },
-    "OpenAI": {
-        "models": [
-            "gpt-3.5-turbo",
-            "gpt-4o-mini",
-            "gpt-4o",
-            "gpt-4-turbo",
-        ],
-        "default": "gpt-4o-mini",
+        "default": "groq/llama-3.1-8b-instant",
     },
 }
-
-
-# =============================================================================
-# RAG Pipeline Initialization
-# =============================================================================
 
 
 def load_chunks() -> list[PaperChunk]:
@@ -109,8 +85,6 @@ class RAGPipelineWrapper:
         api_key: str,
         provider: str,
         model: str,
-        source_filter: str,
-        section_filter: str,
         use_self_query: bool,
         use_query_expansion: bool,
         use_bm25: bool,
@@ -118,14 +92,13 @@ class RAGPipelineWrapper:
         use_reranking: bool,
         top_k: int,
         expansion_count: int,
+        display_chunks: int,
     ) -> tuple[str, list[dict[str, Any]]]:
-        """
-        Process a query through the RAG pipeline.
+        """Process a query through the RAG pipeline.
 
         Returns:
             Tuple of (answer_text, retrieved_chunks_info)
         """
-        # Validation
         if not query.strip():
             raise ValueError("Please enter a question.")
 
@@ -135,30 +108,34 @@ class RAGPipelineWrapper:
         if not use_bm25 and not use_dense:
             raise ValueError("Please enable at least one retrieval method (BM25 or Dense).")
 
+        if top_k < 1 or top_k > 20:
+            raise ValueError("Top-K must be between 1 and 20.")
+
+        if expansion_count < 1 or expansion_count > 5:
+            raise ValueError("Query expansion count must be between 1 and 5.")
+
         if not self.pipeline:
             raise ValueError(
                 "RAG Pipeline not initialized. Please run 'make chunk-data' and 'make index-qdrant' first."
             )
 
-        # Set LLM API key dynamically
+        if provider not in LLM_PROVIDERS:
+            raise ValueError(f"Invalid provider: {provider}. Must be one of {list(LLM_PROVIDERS.keys())}")
+
+        if model not in LLM_PROVIDERS[provider]["models"]:
+            raise ValueError(
+                f"Invalid model '{model}' for provider '{provider}'. "
+                f"Available models: {LLM_PROVIDERS[provider]['models']}"
+            )
+
         from scientific_rag.application.rag.llm_client import llm_client
 
-        # Map provider names to LiteLLM format
-        provider_map = {
-            "Groq": "groq",
-            "OpenRouter": "openrouter",
-            "OpenAI": "openai",
-        }
-
-        llm_provider = provider_map.get(provider, provider.lower())
         llm_client.api_key = api_key
-        llm_client.provider = llm_provider
+        llm_client.provider = provider.lower()
         llm_client.model = model
 
-        # Update query processor expansion count
         self.pipeline.query_processor.expand_to_n = expansion_count
 
-        # Run pipeline
         response = self.pipeline.run(
             query=query,
             use_self_query=use_self_query,
@@ -167,13 +144,11 @@ class RAGPipelineWrapper:
             use_dense=use_dense,
             use_reranking=use_reranking,
             retrieval_top_k=top_k,
-            rerank_top_k=min(top_k, 5),  # Rerank top 5 or less
+            rerank_top_k=display_chunks,
         )
 
-        # Format answer with metadata
-        answer = self._format_answer(response, provider, model)
+        answer = self._format_answer(response, provider, model, display_chunks)
 
-        # Format chunks for display
         chunks_info = [
             {
                 "chunk_id": chunk.chunk_id,
@@ -183,18 +158,17 @@ class RAGPipelineWrapper:
                 "paper_id": chunk.paper_id,
                 "score": chunk.score,
             }
-            for chunk in response.retrieved_chunks
+            for chunk in response.retrieved_chunks[:display_chunks]
         ]
 
         return answer, chunks_info
 
-    def _format_answer(self, response, provider: str, model: str) -> str:
+    def _format_answer(self, response, provider: str, model: str, display_chunks: int) -> str:
         """Format RAG response as markdown."""
         lines = []
         lines.append(response.answer)
         lines.append("\n\n")
 
-        # Add metadata as badges
         metadata_badges = []
         if response.generated_query_variations:
             metadata_badges.append(
@@ -202,6 +176,9 @@ class RAGPipelineWrapper:
             )
         metadata_badges.append(
             f'<span class="metadata-badge">📄 Retrieved Chunks: {len(response.retrieved_chunks)}</span>'
+        )
+        metadata_badges.append(
+            f'<span class="metadata-badge">📊 Display Chunks: {min(display_chunks, len(response.retrieved_chunks))}</span>'
         )
         metadata_badges.append(f'<span class="metadata-badge">⏱️ Execution Time: {response.execution_time:.2f}s</span>')
         metadata_badges.append(f'<span class="metadata-badge">🤖 Model: {provider} / {model}</span>')
@@ -224,11 +201,6 @@ except Exception as e:
     rag_pipeline = None
 
 
-# =============================================================================
-# UI Event Handlers
-# =============================================================================
-
-
 def update_models(provider: str) -> gr.Dropdown:
     if provider in LLM_PROVIDERS:
         models = LLM_PROVIDERS[provider]["models"]
@@ -242,8 +214,6 @@ def process_query(
     api_key: str,
     provider: str,
     model: str,
-    source_filter: str,
-    section_filter: str,
     use_self_query: bool,
     use_query_expansion: bool,
     use_bm25: bool,
@@ -251,15 +221,18 @@ def process_query(
     use_reranking: bool,
     top_k: int,
     expansion_count: int,
+    display_chunks: int,
 ) -> tuple[str, str, gr.update, gr.update, gr.update]:
     try:
+        if not rag_pipeline:
+            error_msg = "⚠️ **System Error**: RAG Pipeline not initialized. Please check logs."
+            return error_msg, "", gr.update(visible=False), gr.update(visible=True), gr.update(value="", visible=False)
+
         answer, chunks = rag_pipeline.process_query(
             query=query,
             api_key=api_key,
             provider=provider,
             model=model,
-            source_filter=source_filter,
-            section_filter=section_filter,
             use_self_query=use_self_query,
             use_query_expansion=use_query_expansion,
             use_bm25=use_bm25,
@@ -267,6 +240,7 @@ def process_query(
             use_reranking=use_reranking,
             top_k=top_k,
             expansion_count=expansion_count,
+            display_chunks=display_chunks,
         )
 
         chunks_display = format_chunks_display(chunks)
@@ -308,16 +282,10 @@ def format_chunks_display(chunks: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
-# =============================================================================
-# Gradio Interface
-# =============================================================================
-
-
 def create_demo() -> gr.Blocks:
     with gr.Blocks(title="Scientific RAG System") as demo:
         gr.Markdown(MAIN_HEADER)
 
-        # System status
         gr.Markdown("---")
 
         gr.Markdown("## ⚙️ Configuration")
@@ -349,23 +317,6 @@ def create_demo() -> gr.Blocks:
                 )
 
             with gr.Column(scale=1):
-                gr.Markdown("### 🔍 Metadata Filters (Optional)")
-
-                source_filter = gr.Dropdown(
-                    label="Source",
-                    choices=["Any", "ArXiv", "PubMed"],
-                    value="Any",
-                    info="Filter by paper source",
-                )
-
-                section_filter = gr.Dropdown(
-                    label="Section",
-                    choices=["Any", "Introduction", "Methods", "Results", "Conclusion"],
-                    value="Any",
-                    info="Filter by paper section",
-                )
-
-            with gr.Column(scale=1):
                 gr.Markdown("### 📊 Retrieval Parameters")
 
                 top_k = gr.Slider(
@@ -384,6 +335,15 @@ def create_demo() -> gr.Blocks:
                     value=3,
                     step=1,
                     info="Number of query variations to generate",
+                )
+
+                display_chunks = gr.Slider(
+                    label="Display Chunks",
+                    minimum=1,
+                    maximum=10,
+                    value=5,
+                    step=1,
+                    info="Number of chunks to display in results",
                 )
 
         gr.Markdown("---")
@@ -541,8 +501,6 @@ Cross-encoder model to improve result relevance
                 api_key,
                 provider,
                 model,
-                source_filter,
-                section_filter,
                 use_self_query,
                 use_query_expansion,
                 use_bm25,
@@ -550,6 +508,7 @@ Cross-encoder model to improve result relevance
                 use_reranking,
                 top_k,
                 expansion_count,
+                display_chunks,
             ],
             outputs=[answer_output, chunks_output, examples_section, answer_section, loading_status],
         )
@@ -570,11 +529,6 @@ Cross-encoder model to improve result relevance
     return demo
 
 
-# =============================================================================
-# Main Entry Point
-# =============================================================================
-
-
 def main():
     demo = create_demo()
     demo.launch(
@@ -587,7 +541,6 @@ def main():
             secondary_hue="slate",
         ),
         css="""
-        /* Global background override - remove all grey backgrounds */
         .gradio-container, .contain, body, .gr-box, .gr-form, .gr-panel {
             background: #ffffff !important;
         }
@@ -597,7 +550,6 @@ def main():
         .output-section { min-height: 300px; }
         .pipeline-component { padding: 10px; border-bottom: 1px solid #f0f0f0; }
 
-        /* Example Questions Section Styles */
         .examples-section {
             background-color: transparent !important;
             background: #ffffff !important;
@@ -644,7 +596,6 @@ def main():
             box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
         }
 
-        /* Loading indicator styles */
         .loading-indicator {
             background: #ffffff;
             border: 2px solid #667eea;
@@ -658,7 +609,6 @@ def main():
             min-height: 200px;
         }
 
-        /* Answer container styles - matching Your Question style */
         .answer-container {
             margin-top: 20px;
         }
@@ -675,7 +625,6 @@ def main():
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
         }
 
-        /* Chunks accordion styling */
         .chunks-accordion {
             background: #ffffff !important;
             border: 1px solid #d1d5db !important;
@@ -683,7 +632,6 @@ def main():
             margin-top: 16px !important;
         }
 
-        /* Metadata badges */
         .metadata-container {
             display: flex;
             flex-wrap: wrap;

@@ -12,6 +12,7 @@ class LLMClient:
     def __init__(self):
         self.model = settings.llm_model
         self.api_key = settings.llm_api_key
+        self.provider = settings.llm_provider
         self.temperature = settings.llm_temperature
         self.max_tokens = settings.llm_max_tokens
 
@@ -27,21 +28,22 @@ class LLMClient:
         messages.append({"role": "user", "content": prompt})
 
         try:
-            logger.debug(f"Sending request to {self.model} via OpenRouter")
+            logger.debug(f"Sending request to {self.model} via {self.provider}")
 
-            response = completion(
-                model=self.model,
-                messages=messages,
-                api_key=self.api_key,
-                custom_llm_provider="openai",
-                api_base="https://openrouter.ai/api/v1",
-                extra_headers={
-                    "HTTP-Referer": "http://localhost:8000",  # TODO: Replace with your app's URL
+            completion_params = {
+                "model": self.model,
+                "messages": messages,
+                "api_key": self.api_key,
+                "temperature": kwargs.get("temperature", self.temperature),
+                "max_tokens": kwargs.get("max_tokens", self.max_tokens),
+                "custom_llm_provider": self.provider,
+                "extra_headers": {
+                    "HTTP-Referer": "http://localhost:7860",
                     "X-Title": "Scientific RAG",
                 },
-                temperature=kwargs.get("temperature", self.temperature),
-                max_tokens=kwargs.get("max_tokens", self.max_tokens),
-            )
+            }
+
+            response = completion(**completion_params)
 
             content = response.choices[0].message.content
             return content.strip()

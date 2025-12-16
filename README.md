@@ -210,25 +210,5 @@ QDRANT_COLLECTION_NAME=scientific_papers
 ## 🚀 Deployment
 
 Want to deploy for free? See the [ops/](ops/) folder:
-- **[ops/QUICK_START.md](ops/QUICK_START.md)** - Deploy in 3 commands
 - **[ops/DEPLOYMENT.md](ops/DEPLOYMENT.md)** - Full deployment guide
 - **[ops/README_SPACES.md](ops/README_SPACES.md)** - HF Spaces README template
-
-## 🎯 Retrieval Comparison
-
-### When BM25 Outperforms Dense
-
-**Best for: Exact terms, rare words, acronyms**
-
-Examples:
-- "papers mentioning @xmath0 decay channel"
-- "CLEO detector measurements"
-- "CRISPR-Cas9 mechanism"
-
-### When Dense Outperforms BM25
-
-**Best for: Semantic similarity, paraphrased questions**
-
-Examples:
-- "How do cells divide?" (finds "mitosis", "cellular division")
-- "Methods for preventing blood clots" (finds "anticoagulation therapy")

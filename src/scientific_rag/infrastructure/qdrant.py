@@ -1,7 +1,5 @@
-from collections.abc import Sequence
 from typing import Any
 
-from fastembed import SparseTextEmbedding
 from loguru import logger
 from qdrant_client import QdrantClient as SyncQdrantClient
 from qdrant_client.models import (
@@ -10,7 +8,6 @@ from qdrant_client.models import (
     Filter,
     MatchValue,
     Modifier,
-    NamedSparseVector,
     PointStruct,
     SparseIndexParams,
     SparseVector,
@@ -30,7 +27,11 @@ class QdrantService:
         self.collection_name = settings.qdrant_collection_name
 
         logger.info(f"Initializing Qdrant client: {self.url}")
-        self.client = SyncQdrantClient(url=self.url, api_key=self.api_key, timeout=30)
+
+        if self.url == ":memory:":
+            self.client = SyncQdrantClient(location=":memory:", timeout=30)
+        else:
+            self.client = SyncQdrantClient(url=self.url, api_key=self.api_key, timeout=30)
 
     def create_collection(self, vector_size: int = 384, distance: Distance = Distance.COSINE) -> None:
         if self.client.collection_exists(self.collection_name):

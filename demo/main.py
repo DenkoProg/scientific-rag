@@ -1,4 +1,3 @@
-import json
 import os
 from pathlib import Path
 import sys
@@ -16,10 +15,6 @@ if os.getenv("SPACE_ID"):  # Detect HF Spaces environment
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from scientific_rag.application.rag.pipeline import RAGPipeline
-from scientific_rag.domain.documents import PaperChunk
-from scientific_rag.domain.queries import Query, QueryFilters
-from scientific_rag.domain.types import DataSource, SectionType
-from scientific_rag.settings import settings
 
 
 MAIN_HEADER = """

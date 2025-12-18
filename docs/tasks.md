@@ -35,63 +35,56 @@ scientific-rag/
 ├── docker-compose.yaml         # Qdrant infrastructure
 ├── .env.dist                   # Environment template
 ├── README.md                   # Documentation
-├── tasks.md                    # This file
+├── app.py                      # Main Gradio application
+├── requirements.txt            # HuggingFace Spaces dependencies
 ├── docs/
-│   └── assignment.md           # Assignment requirements
-├── configs/
-│   └── rag_config.yaml         # RAG pipeline configuration
+│   ├── assignment.md           # Assignment requirements
+│   ├── tasks.md                # This file
+│   ├── roles.md                # Team roles distribution
+│   └── submission.md           # Submission requirements
 ├── data/
 │   ├── raw/                    # Downloaded dataset cache
-│   └── processed/              # Processed chunks
-├── scientific_rag/             # Main package
-│   ├── __init__.py
-│   ├── settings.py             # Configuration management
-│   ├── domain/                 # Core entities
-│   │   ├── __init__.py
-│   │   ├── documents.py        # Document models (Paper, Chunk)
-│   │   ├── queries.py          # Query models
-│   │   └── types.py            # Enums and type definitions
-│   ├── application/            # Business logic
-│   │   ├── __init__.py
-│   │   ├── data_loader.py      # HuggingFace dataset loading
-│   │   ├── chunking/           # Chunking strategies
-│   │   │   ├── __init__.py
-│   │   │   ├── base.py         # Abstract chunker
-│   │   │   └── scientific_chunker.py
-│   │   ├── embeddings/         # Embedding models
-│   │   │   ├── __init__.py
-│   │   │   └── encoder.py      # Sentence-transformers wrapper
-│   │   ├── query_processing/   # Query enhancement
-│   │   │   ├── __init__.py
-│   │   │   ├── query_expansion.py   # Multi-query generation
-│   │   │   └── self_query.py        # Metadata extraction
-│   │   ├── retrieval/          # Retrieval logic
-│   │   │   ├── __init__.py
-│   │   │   ├── bm25_retriever.py
-│   │   │   ├── dense_retriever.py
-│   │   │   └── hybrid_retriever.py
-│   │   ├── reranking/          # Reranker
-│   │   │   ├── __init__.py
-│   │   │   └── cross_encoder.py
-│   │   └── rag/                # RAG pipeline
-│   │       ├── __init__.py
-│   │       ├── pipeline.py     # Main RAG orchestration
-│   │       ├── prompt_templates.py
-│   │       └── llm_client.py   # LiteLLM wrapper
-│   └── infrastructure/         # External integrations
+│   └── processed/              # Processed chunks (JSON)
+├── notebooks/                  # Jupyter notebooks for testing
+│   ├── 01_test_data_loader.ipynb
+│   ├── 02_test_rag_pipeline.ipynb
+│   └── 03_chunks_eda.ipynb
+├── src/
+│   └── scientific_rag/         # Main package (under src/)
 │       ├── __init__.py
-│       └── qdrant.py           # Qdrant vector database client
-├── demo/                        # Gradio/Streamlit UI
-│   ├── __init__.py
-│   └── main.py                 # Web interface
+│       ├── cli.py              # Typer CLI for data pipeline
+│       ├── settings.py         # Pydantic settings management
+│       ├── domain/             # Core entities
+│       │   ├── __init__.py
+│       │   ├── documents.py    # ScientificPaper, PaperChunk models
+│       │   ├── queries.py      # Query, QueryFilters, ExpandedQuery models
+│       │   ├── responses.py    # RAGResponse model
+│       │   └── types.py        # DataSource, SectionType enums
+│       ├── application/        # Business logic
+│       │   ├── data_loader.py  # HuggingFace dataset loading
+│       │   ├── chunking/
+│       │   │   └── scientific_chunker.py  # Section-aware chunking
+│       │   ├── embeddings/
+│       │   │   └── encoder.py  # E5 embedding model wrapper
+│       │   ├── query/          # Query processing (unified module)
+│       │   │   └── query_processor.py  # Self-query + expansion combined
+│       │   ├── retrieval/
+│       │   │   ├── bm25_retriever.py    # Sparse search via Qdrant
+│       │   │   ├── dense_retriever.py   # Dense search via Qdrant
+│       │   │   └── hybrid_retriever.py  # Combined retrieval
+│       │   ├── reranking/
+│       │   │   └── cross_encoder.py     # Cross-encoder reranker
+│       │   └── rag/
+│       │       ├── pipeline.py          # Main RAG orchestration
+│       │       ├── prompt_templates.py  # System and RAG prompts
+│       │       └── llm_client.py        # LiteLLM wrapper
+│       ├── infrastructure/
+│       │   └── qdrant.py       # Qdrant client (dense + sparse vectors)
+│       └── scripts/
+│           ├── chunk_data.py   # Data chunking script
+│           └── index_qdrant.py # Qdrant indexing script
 └── tests/
-    ├── __init__.py
-    ├── unit/
-    │   ├── test_chunking.py
-    │   ├── test_retrieval.py
-    │   └── test_reranking.py
-    └── integration/
-        └── test_rag_pipeline.py
+    └── (test files)
 ```
 
 ---
@@ -102,17 +95,21 @@ scientific-rag/
 
 - [✅] **1.1** Update `pyproject.toml` with project dependencies
 
-  - `datasets` - HuggingFace datasets
+  - `datasets` - HuggingFace datasets (pinned <3.0.0 for compatibility)
   - `sentence-transformers` - Embeddings and cross-encoders
-  - `rank-bm25` - BM25 retrieval
+  - `fastembed` - Sparse BM25 embeddings for Qdrant
   - `qdrant-client` - Vector database client
   - `litellm` - LLM abstraction layer
-  - `gradio` or `streamlit` - UI framework
+  - `gradio` - UI framework (pinned 6.1.0)
   - `pydantic` - Data validation
   - `pydantic-settings` - Configuration management
   - `loguru` - Logging
   - `numpy`, `scipy` - Numerical operations
   - `tqdm` - Progress bars
+  - `typer` - CLI framework
+  - `nltk` - Natural language processing
+  - `tenacity` - Retry logic for API calls
+  - `rootutils` - Path management
 
 - [✅] **1.2** Create `docker-compose.yaml` for local infrastructure
 
@@ -132,121 +129,125 @@ scientific-rag/
     ```
   - Add `make qdrant-up` and `make qdrant-down` commands
 
-- [✅] **1.3** Create `scientific_rag/settings.py`
+- [✅] **1.3** Create `src/scientific_rag/settings.py`
 
-  - Environment variable management
-  - Model IDs configuration
-  - API keys handling (OpenAI, Groq, OpenRouter)
-  - Qdrant connection settings (host, port, API key for cloud)
-  - Default chunking parameters
+  - Pydantic BaseSettings with `.env` file support
+  - Qdrant settings: `qdrant_url`, `qdrant_api_key`, `qdrant_collection_name`
+  - Embedding settings: `embedding_model_name`, `sparse_embedding_model_name`, `embedding_device`
+  - Chunking settings: `chunk_size`, `chunk_overlap`, `min_chunk_size`
+  - Retrieval settings: `retrieval_top_k`, `bm25_weight`, `dense_weight`
+  - Reranking settings: `reranker_model_name`, `rerank_top_k`
+  - LLM settings: `llm_provider`, `llm_model`, `llm_api_key`, `llm_temperature`, `llm_max_tokens`
+  - Dataset settings: `dataset_name`, `dataset_split`, `dataset_cache_dir`, `dataset_sample_size`
 
-- [✅] **1.4** Create `scientific_rag/domain/` entities
+- [✅] **1.4** Create `src/scientific_rag/domain/` entities
 
-  - `types.py`: Enums for DataSource (ARXIV, PUBMED), SectionType
-  - `documents.py`: `ScientificPaper`, `PaperChunk` Pydantic models with metadata
-  - `queries.py`: `Query`, `EmbeddedQuery`, `QueryFilters` models
+  - `types.py`: StrEnum for `DataSource` (ARXIV, PUBMED) and `SectionType` (INTRODUCTION, METHODS, RESULTS, CONCLUSION, ABSTRACT, OTHER)
+  - `documents.py`: `ScientificPaper` (frozen model), `PaperChunk` with score/embedding fields and `to_dict()` method
+  - `queries.py`: `QueryFilters` with `to_qdrant_filter()`, `Query`, `ExpandedQuery` with `all_queries()`, `EmbeddedQuery`
+  - `responses.py`: `RAGResponse` with answer, query variations, chunks, filters, execution_time
 
-- [✅] **1.5** Implement `scientific_rag/application/data_loader.py`
+- [✅] **1.5** Implement `src/scientific_rag/application/data_loader.py`
   - Load `armanc/scientific_papers` from HuggingFace
   - Support both `arxiv` and `pubmed` subsets
-  - Configurable sample size for development
+  - Configurable sample size for development via settings
   - Progress tracking with tqdm
+  - `load_papers()` and `load_both_sources()` methods
+
+- [✅] **1.6** Create `src/scientific_rag/cli.py` with Typer
+  - `chunk` command: Process papers and generate chunks
+  - `index` command: Embed chunks and upload to Qdrant
+  - `pipeline` command: Run complete pipeline (chunk + index)
+  - `info` command: Show configuration and Qdrant status
 
 ### Phase 2: Chunking Strategy
 
-- Configurable sample size for development
-- Progress tracking with tqdm
+- [✅] **2.1** Implement `src/scientific_rag/application/chunking/scientific_chunker.py`
 
-### Phase 2: Chunking Strategy
+  - **Paragraph-based splitting**: Split on `\n` boundaries, group into chunks
+  - **Word-based sizing**: `chunk_size` and `chunk_overlap` in words
+  - **Minimum chunk filtering**: Skip chunks below `min_chunk_size`
+  - **Abstract handling**: Create separate chunk for abstract with `SectionType.ABSTRACT`
+  - **Section inference**: Infer section type by position (intro/methods/results/conclusion)
+  - **Metadata preservation**: Store source, section, paper_id, position
+  - **LaTeX normalization**: Handle `@xmath`, `@xcite` placeholders
+  - **Hash-based IDs**: Generate UUID5 chunk IDs from paper_id + position
 
-- [✅] **2.1** Implement `scientific_rag/application/chunking/scientific_chunker.py`
-
-  - **Section-aware chunking**: Parse `section_names` to identify sections
-  - **Paragraph-based splitting**: Split on `\n` boundaries
-  - **Overlap strategy**: Add overlap between chunks for context
-  - Configurable `chunk_size` and `chunk_overlap`
-  - **Metadata preservation**: Store source (arxiv/pubmed), normalized section name, paper_id, position
-  - Normalize section names to enum values (introduction, methods, results, conclusion, other)
-
-- [✅] **2.2** Create processing script to generate chunks
-  - Batch processing with progress tracking
-  - Save chunks to disk (JSON/Parquet) for reuse
-  - Generate unique chunk IDs (hash-based)
+- [✅] **2.2** Create `src/scientific_rag/scripts/chunk_data.py`
+  - Batch processing with configurable batch_size
+  - Stream-write to JSON file (memory efficient)
+  - Generate statistics file with chunk counts
+  - Output to `data/processed/chunks_{split}.json`
 
 ### Phase 3: Retrieval Implementation
 
-- [✅] **3.1** Create `scientific_rag/application/embeddings/encoder.py`
+- [✅] **3.1** Create `src/scientific_rag/application/embeddings/encoder.py`
 
-  - Singleton pattern for embedding model
-  - Use `intfloat/e5-small-v2`
-  - Batch embedding support
-  - GPU/CPU device configuration
+  - Singleton pattern for `intfloat/e5-small-v2` model
+  - Query/passage prefixing for E5 models (`query: ` / `passage: `)
+  - Batch embedding with configurable batch_size
+  - Normalized embeddings
+  - CPU/GPU device configuration via settings
 
-- [✅] **3.2** Implement `scientific_rag/infrastructure/qdrant.py`
+- [✅] **3.2** Implement `src/scientific_rag/infrastructure/qdrant.py`
 
-  - Qdrant client wrapper (local Docker or Qdrant Cloud)
-  - Collection creation with proper schema
-  - `upsert_chunks(chunks)` - batch insert with embeddings
-  - `search(query_vector, filters, k)` - filtered vector search
-  - Support for Qdrant filter syntax
+  - QdrantService class with sync client
+  - Support for local Docker and Qdrant Cloud (via `qdrant_url`, `qdrant_api_key`)
+  - **Hybrid vector collection**: Dense vectors (384-d) + Sparse BM25 vectors
+  - `create_collection()` with named vectors: "dense" and "bm25"
+  - Payload indexes on `source`, `section`, `paper_id` fields
+  - `upsert_chunks()` with dense + sparse embeddings
+  - `search_dense()` for semantic search
+  - `search_sparse()` for BM25 search
+  - `_build_filters()` to convert `QueryFilters` to Qdrant Filter objects
+  - `get_collection_info()` for status checks
 
+- [✅] **3.3** Implement `src/scientific_rag/application/retrieval/bm25_retriever.py`
 
-- [✅] **3.3** Implement `scientific_rag/application/retrieval/bm25_retriever.py`
+  - Use `fastembed.SparseTextEmbedding` with `Qdrant/bm25` model
+  - Sparse vector search via Qdrant (not in-memory rank_bm25)
+  - Score normalization (min-max scaling)
+  - `search(query, k, filters) -> List[PaperChunk]` interface
 
-  - Use `rank_bm25` library
-  - Tokenization with proper preprocessing
-  - `search(query, k) -> List[Chunk]` interface
-  - Score normalization
+- [✅] **3.4** Implement `src/scientific_rag/application/retrieval/dense_retriever.py`
 
-- [✅] **3.4** Implement `scientific_rag/application/retrieval/dense_retriever.py`
+  - Semantic search using Qdrant dense vectors
+  - Use shared `encoder` singleton for query embedding
+  - Apply metadata filters from `QueryFilters`
+  - `search(query, k, filters) -> List[PaperChunk]` interface
 
-  - Semantic search using Qdrant
-  - Integrate with `QdrantClient` from infrastructure
-  - Apply metadata filters from self-query
-  - `search(query, filters, k) -> List[Chunk]` interface
-
-- [✅] **3.5** Implement `scientific_rag/application/retrieval/hybrid_retriever.py`
-  - Combine BM25 and dense retrieval
-  - Pass metadata filters to both retrievers
-  - Configurable weights for each method
+- [✅] **3.5** Implement `src/scientific_rag/application/retrieval/hybrid_retriever.py`
+  - Combine BM25 and dense retrieval with weighted scoring
+  - Configurable weights: `bm25_weight`, `dense_weight` from settings
   - Toggle switches: `use_bm25`, `use_dense`
-  - Reciprocal Rank Fusion (RRF) or weighted combination
-  - Deduplication of results
+  - Merge results by chunk_id, sum weighted scores
+  - Return top-k by combined score
 
 ### Phase 4: Query Processing & Metadata Filtering
 
-- [✅] **4.1** Implement `scientific_rag/application/query_processing/self_query.py`
+- [✅] **4.1** Implement `src/scientific_rag/application/query/query_processor.py` (Unified module)
 
-  - Extract metadata filters from natural language queries using **rule-based matching**
-  - Detect source preferences: "arxiv papers about..." → filter to arxiv
-  - Detect section preferences: "in the methods section..." → filter to methods
-  - Use regex/keyword matching
-  - No LLM needed - metadata is already structured in chunks from dataset
-  - Return structured `QueryFilters` object
-  - Filters are passed to Qdrant for efficient pre-filtering before vector search
+  - **Self-Query (filter extraction)**:
+    - Rule-based regex matching for source detection ("arxiv", "pubmed")
+    - Section detection patterns: introduction, methods, results, conclusion
+    - Keep original query unmodified (no stripping of filter keywords)
+    - Return `QueryFilters` object
 
-- [✅] **4.2** Implement `scientific_rag/application/query_processing/query_expansion.py`
+  - **Query Expansion**:
+    - LLM-based query variation generation
+    - Configurable `expand_to_n` parameter (default: 3)
+    - Generate N-1 variations to get N total queries
+    - Parse LLM response by "###" separator
+    - Skip expansion if no API key configured
 
-  - Generate multiple query variations to improve recall
-  - Use LLM to create semantically similar queries
-  - Configurable `expand_to_n` parameter (default: 3)
-  - Example prompt:
+  - **Combined processing**:
+    - `process(query, use_expansion, extract_filters) -> ExpandedQuery`
+    - Returns original query, variations list, and filters
 
-    ```
-    Generate {n} different versions of this question to search a scientific papers database.
-    Each version should capture the same intent but use different wording.
-    Separate versions with "###"
+- [✅] **4.2** Update `src/scientific_rag/domain/queries.py`
 
-    Original: {query}
-    ```
-
-  - Search with all expanded queries, merge results
-  - Deduplicate before reranking
-
-- [✅] **4.3** Update `scientific_rag/domain/queries.py`
-
-  - Add `QueryFilters` model for self-query results
-  - Add `ExpandedQuery` model to hold query variations
+  - `QueryFilters` model with `to_qdrant_filter()` method
+  - `ExpandedQuery` model with `all_queries()` helper method
   - Example:
 
     ```python
@@ -254,110 +255,115 @@ scientific-rag/
         source: Literal["arxiv", "pubmed", "any"] = "any"
         section: Literal["introduction", "methods", "results", "conclusion", "any"] = "any"
 
+        def to_qdrant_filter(self) -> dict | None:
+            # Build Qdrant filter syntax
+
     class ExpandedQuery(BaseModel):
         original: str
         variations: list[str]
         filters: QueryFilters | None = None
+
+        def all_queries(self) -> list[str]:
+            return [self.original] + self.variations
     ```
 
 ### Phase 5: Reranking
 
-- [✅] **5.1** Implement `scientific_rag/application/reranking/cross_encoder.py`
-  - Use `cross-encoder/ms-marco-MiniLM-L6-v2` (or similar)
-  - `rerank(query, chunks, top_k) -> List[Chunk]` interface
-  - Batch processing for efficiency
-  - Score-based sorting
+- [✅] **5.1** Implement `src/scientific_rag/application/reranking/cross_encoder.py`
+  - Use `cross-encoder/ms-marco-MiniLM-L6-v2`
+  - Singleton pattern with lazy loading
+  - `rerank(query, chunks, top_k) -> List[PaperChunk]` interface
+  - Copy chunks before modifying scores (immutability)
+  - Score-based sorting, return top_k
 
 ### Phase 6: LLM Integration
 
-- [✅] **6.1** Implement `scientific_rag/application/rag/llm_client.py`
+- [✅] **6.1** Implement `src/scientific_rag/application/rag/llm_client.py`
 
   - LiteLLM wrapper for provider abstraction
-  - Support for Groq, OpenRouter, OpenAI
-  - Configurable model selection
-  - Error handling and retries
-  - Response streaming (optional)
+  - Support for OpenRouter, Groq (model format: `provider/model`)
+  - Retry logic with `tenacity` (3 attempts, exponential backoff)
+  - Custom headers for OpenRouter (HTTP-Referer, X-Title)
+  - Singleton pattern for shared client
+  - Dynamic API key/model override from UI
 
-- [✅] **6.2** Create `scientific_rag/application/rag/prompt_templates.py`
+- [✅] **6.2** Create `src/scientific_rag/application/rag/prompt_templates.py`
 
-  - RAG prompt template with context injection
-  - Citation-aware prompting (instruct model to cite sources)
-  - System prompt for scientific Q&A
-  - Example:
+  - `RAGPrompts` class with static methods
+  - `SYSTEM_PROMPT`: Scientific assistant with citation rules
+  - `format_context(chunks)`: Format chunks with [1], [2] labels and metadata
+  - `generate_rag_prompt(query, chunks)`: Full prompt with context injection
+  - Citation format: `[{i}] Source: {source} | Paper ID: {id} | Section: {section}`
 
-    ```
-    You are a scientific research assistant. Answer the question based on the provided context.
-    Always cite your sources using [1], [2], etc.
-
-    Context:
-    [1] {chunk_1}
-    [2] {chunk_2}
-    ...
-
-    Question: {query}
-
-    Answer with citations:
-    ```
-
-- [✅] **6.3** Implement `scientific_rag/application/rag/pipeline.py`
-  - Main `RAGPipeline` class
-  - Orchestrate: Query → Self-Query → Query Expansion → Retrieve (with filters) → Rerank → Generate
+- [✅] **6.3** Implement `src/scientific_rag/application/rag/pipeline.py`
+  - Main `RAGPipeline` class with dependency injection
+  - Initialize: `QueryProcessor`, `HybridRetriever`, `CrossEncoderReranker`, `LLMClient`
+  - `run()` method with toggle parameters
   - Full pipeline flow:
     ```
-    1. Self-Query: Extract filters (source, section) for Qdrant
-    2. Query Expansion: Generate N query variations
-    3. Retrieve: Search with all queries (BM25 + Qdrant with filters)
-    4. Merge & Deduplicate: Combine results from all queries
-    5. Rerank: Cross-encoder scoring
-    6. Generate: LLM with citations
+    1. Query Processing: Extract filters + expand query variations
+    2. Retrieve: Search with all queries via HybridRetriever
+    3. Merge & Deduplicate: Combine by chunk_id, keep highest scores
+    4. Rerank: Cross-encoder scoring (optional)
+    5. Generate: LLM with RAGPrompts template
     ```
-  - Configurable retrieval parameters
-  - Toggle for each component: `use_self_query`, `use_query_expansion`, `use_bm25`, `use_dense`, `use_reranking`
-  - Citation tracking and formatting
+  - Return `RAGResponse` with answer, chunks, execution_time, metadata
 
 ### Phase 7: User Interface
 
-- [✅] **7.1** Create `demo/main.py` with Gradio
+- [✅] **7.1** Create `app.py` (root level) with Gradio
 
+  - `RAGPipelineWrapper` class for UI-specific logic
   - Text input for questions
-  - API key input field (not stored in code)
-  - Dropdown for LLM provider/model selection
-  - Dropdown for metadata filters (optional manual override):
-    - Source: Any / ArXiv / PubMed
-    - Section: Any / Introduction / Methods / Results / Conclusion
+  - Password field for API key (not stored in code)
+  - Dropdown for LLM provider (OpenRouter, Groq)
+  - Dynamic model dropdown based on selected provider
   - Checkboxes for pipeline components:
     - [✅] Enable Self-Query (metadata extraction)
     - [✅] Enable Query Expansion
     - [✅] Enable BM25
-    - [✅] Enable Dense Retrieval (Qdrant)
+    - [✅] Enable Dense Retrieval
     - [✅] Enable Reranking
-  - Slider for top-k parameter
-  - Slider for query expansion count (1-5)
-  - Output: Answer with citations
-  - Expandable section showing retrieved chunks with metadata
+  - Sliders:
+    - Top-K retrieval (1-50)
+    - Query expansion count (1-5)
+    - Display chunks count (1-10)
+  - Tabbed output:
+    - Answer tab: Formatted markdown with metadata
+    - Retrieved Chunks tab: JSON display of chunk details
+  - Example queries with different scenarios
 
 - [✅] **7.2** Add service description
 
-  - Brief explanation of the RAG system
-  - Dataset information
-  - Usage instructions
+  - Header with system explanation
+  - Model providers and available models
 
 - [✅] **7.3** Style and UX improvements
-  - Clear layout
-  - Loading indicators
-  - Error messages for invalid inputs
+  - Clean Gradio Blocks layout
+  - Input validation with error messages
+  - Loading states during processing
+  - Clear button functionality
 
 ### Phase 8: Deployment
 
 - [✅] **8.1** Create `requirements.txt` for HuggingFace Spaces
 
   - Pin versions for reproducibility
-  - Note: HF Spaces may need Qdrant Cloud instead of local
+  - Include all production dependencies
 
 - [✅] **8.2** Create HuggingFace Space configuration
 
-  - `README.md` with YAML frontmatter for Gradio SDK
-  - Resource requirements (CPU/memory)
+  - `README.md` with YAML frontmatter:
+    ```yaml
+    ---
+    title: Scientific RAG System
+    emoji: 🔬
+    sdk: gradio
+    sdk_version: 6.0.0
+    app_file: app.py
+    python_version: 3.11
+    ---
+    ```
   - Configure Qdrant Cloud connection for deployment
 
 - [✅] **8.3** Deploy to HuggingFace Spaces
@@ -392,16 +398,15 @@ scientific-rag/
 
 - [✅] **9.4** Document the system in README.md
 
-  - Architecture overview
-  - Installation instructions (including Docker/Qdrant setup)
-  - Usage examples
-  - Component descriptions
-  - Retrieval comparison findings
-  - Metadata filtering examples
+  - Architecture diagram
+  - Installation instructions (UV, Docker, Qdrant)
+  - Quick start guide with Make commands
+  - CLI usage documentation
+  - Environment configuration
 
 - [✅] **9.5** Prepare submission materials
-  - Source code link
-  - Deployed service link
+  - Source code link (GitHub)
+  - Deployed service link (HuggingFace Spaces)
   - Component checklist (per assignment requirements)
 
 ---
@@ -434,12 +439,12 @@ scientific-rag/
 [project]
 name = "scientific-rag"
 version = "0.1.0"
-description = "Scientific Papers RAG System"
+description = "Scientific Papers RAG System with Advanced Retrieval"
 requires-python = ">=3.11"
 
 dependencies = [
     # Data
-    "datasets>=3.0.0",
+    "datasets<3.0.0",
     "huggingface-hub>=0.20.0",
 
     # ML/Embeddings
@@ -449,23 +454,29 @@ dependencies = [
     "scipy>=1.11.0",
 
     # Retrieval
-    "rank-bm25>=0.2.2",
+    "fastembed>=0.2.0",  # For BM25 sparse embeddings
     "qdrant-client>=1.8.0",
 
     # LLM
     "litellm>=1.0.0",
+    "tenacity>=9.1.2",  # Retry logic
 
     # Configuration
     "pydantic>=2.0.0",
     "pydantic-settings>=2.0.0",
 
     # UI
-    "gradio>=4.0.0",
+    "gradio==6.1.0",
+
+    # CLI
+    "typer>=0.9.0",
 
     # Utilities
     "loguru>=0.7.0",
     "tqdm>=4.65.0",
     "python-dotenv>=1.0.0",
+    "rootutils",
+    "nltk>=3.9.2",
 ]
 
 [dependency-groups]
@@ -475,7 +486,11 @@ dev = [
     "mypy>=1.10.0",
     "pre-commit>=3.0.0",
     "ipykernel>=6.0.0",
+    "ipywidgets",
 ]
+
+[project.scripts]
+cli = "scientific_rag.cli:app"
 ```
 
 ---
@@ -486,17 +501,27 @@ dev = [
 # Setup
 make install
 
-# Run locally
+# Start Qdrant
+make qdrant-up
+
+# Process data pipeline
+make pipeline        # Complete: chunk + index
+make chunk-data      # Just chunking
+make index-qdrant    # Just indexing
+
+# Run application
 make run-app
 
-# Run tests
-make test
-
-# Lint
+# Development
 make lint
-
-# Format
 make format
+make clean
+
+# CLI commands
+uv run cli chunk --batch-size 10000
+uv run cli index --embedding-batch-size 32
+uv run cli pipeline
+uv run cli info
 ```
 
 ---
@@ -505,45 +530,66 @@ make format
 
 ### Chunking Strategy
 
-For scientific papers, consider:
+For scientific papers:
 
-1. **Section-based chunking**: Split by sections first, then by size
-2. **Preserve context**: Include section title in each chunk
-3. **Handle LaTeX**: Papers contain `@xmath` tokens for math expressions
+1. **Paragraph-based chunking**: Split on `\n` boundaries, group by word count
+2. **Abstract handling**: Create dedicated chunk for abstract with `SectionType.ABSTRACT`
+3. **Section inference**: Infer section type by position in document (first 15% = intro, etc.)
+4. **Handle LaTeX**: Normalize `@xmath`, `@xcite` placeholders with readable markers
+5. **Hash-based IDs**: UUID5 from paper_id + position for deterministic chunk IDs
+
+### BM25 Implementation
+
+Instead of in-memory `rank_bm25`:
+
+- Use `fastembed.SparseTextEmbedding` with `Qdrant/bm25` model
+- Store sparse vectors directly in Qdrant alongside dense vectors
+- Enables native filtering on BM25 search (not possible with in-memory BM25)
+
+### Hybrid Search
+
+Both BM25 and dense search support:
+
+- Qdrant native filtering by `source` and `section`
+- Weighted score combination (configurable weights)
+- Unified result merging by chunk_id
 
 ### Retrieval Comparison
 
 Document specific queries that demonstrate:
 
-- BM25 strength: Exact term matching, rare terminology
-- Dense strength: Semantic understanding, paraphrased queries
+- BM25 strength: Exact term matching, rare terminology, specific identifiers
+- Dense strength: Semantic understanding, paraphrased queries, conceptual similarity
 
 ### LLM Configuration
 
-Recommended free options:
+Supported providers:
 
-- **Groq**: Fast, free tier with `llama-3.1-8b-instant`
-- **OpenRouter**: Multiple model options, some free
+- **OpenRouter**: Multiple free models including `meta-llama/llama-3.3-70b-instruct:free`
+- **Groq**: Fast inference with `groq/llama-3.1-8b-instant`
 
 ### Citation Format
 
 ```
 Answer: The decay channel measurement shows... [1]. Further analysis using the CLEO detector... [2].
 
-Sources:
-[1] "we have studied the leptonic decay..." (arxiv, section: introduction)
-[2] "data collected with the CLEO detector..." (arxiv, section: methods)
+[1] Source: ARXIV | Paper ID: arxiv_123 | Section: introduction
+    Content: "we have studied the leptonic decay..."
+
+[2] Source: ARXIV | Paper ID: arxiv_456 | Section: methods
+    Content: "data collected with the CLEO detector..."
 ```
 
 ---
 
 ## Timeline Suggestion
 
-| Week               | Focus Area                               |
-| ------------------ | ---------------------------------------- |
-| Week 1 (Dec 9-11)  | Phase 1-2: Setup, Data Loading, Chunking |
-| Week 2 (Dec 12-14) | Phase 3-5: Retrieval, Reranking, LLM     |
-| Week 3 (Dec 15-16) | Phase 6-8: UI, Deployment, Documentation |
+| Days               | Focus Area                                |
+| ------------------ | ----------------------------------------- |
+| Day 1-2 (Dec 12-13)| Phase 1-2: Setup, Data Loading, Chunking  |
+| Day 2-3 (Dec 13-14)| Phase 3-4: Retrieval, Query Processing    |
+| Day 3-4 (Dec 14-15)| Phase 5-6: Reranking, LLM Integration     |
+| Day 4-5 (Dec 15-16)| Phase 7-9: UI, Deployment, Documentation  |
 
 ---
 

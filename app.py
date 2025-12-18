@@ -1,7 +1,12 @@
+from pathlib import Path
+import sys
 from typing import Any
 
 import gradio as gr
 from loguru import logger
+
+
+sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from scientific_rag.application.rag.pipeline import RAGPipeline
 

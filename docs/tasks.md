@@ -349,32 +349,32 @@ scientific-rag/
 
 ### Phase 8: Deployment
 
-- [ ] **8.1** Create `requirements.txt` for HuggingFace Spaces
+- [✅] **8.1** Create `requirements.txt` for HuggingFace Spaces
 
   - Pin versions for reproducibility
   - Note: HF Spaces may need Qdrant Cloud instead of local
 
-- [ ] **8.2** Create HuggingFace Space configuration
+- [✅] **8.2** Create HuggingFace Space configuration
 
   - `README.md` with YAML frontmatter for Gradio SDK
   - Resource requirements (CPU/memory)
   - Configure Qdrant Cloud connection for deployment
 
-- [ ] **8.3** Deploy to HuggingFace Spaces
+- [✅] **8.3** Deploy to HuggingFace Spaces
   - Test with sample queries
   - Verify API key handling
   - Verify Qdrant Cloud connectivity
 
 ### Phase 9: Evaluation & Documentation
 
-- [ ] **9.1** Find queries where BM25 outperforms dense retrieval
+- [✅] **9.1** Find queries where BM25 outperforms dense retrieval
 
   - Queries with specific terminology, rare words, or exact phrases
   - Examples:
     - "papers mentioning @xmath0 decay channel"
     - "CLEO detector measurements"
 
-- [ ] **9.2** Find queries where dense retrieval outperforms BM25
+- [✅] **9.2** Find queries where dense retrieval outperforms BM25
 
   - Semantic similarity queries
   - Paraphrased questions
@@ -382,7 +382,7 @@ scientific-rag/
     - "How do researchers measure particle lifetimes?"
     - "What methods are used for blood clot prevention?"
 
-- [ ] **9.3** Demonstrate metadata filtering effectiveness
+- [✅] **9.3** Demonstrate metadata filtering effectiveness
 
   - Show queries where filtering by source improves results
   - Show queries where filtering by section improves results
@@ -390,7 +390,7 @@ scientific-rag/
     - "arxiv papers about quantum computing" → filter to arxiv
     - "methodology for clinical trials" → filter to methods section
 
-- [ ] **9.4** Document the system in README.md
+- [✅] **9.4** Document the system in README.md
 
   - Architecture overview
   - Installation instructions (including Docker/Qdrant setup)
@@ -399,7 +399,7 @@ scientific-rag/
   - Retrieval comparison findings
   - Metadata filtering examples
 
-- [ ] **9.5** Prepare submission materials
+- [✅] **9.5** Prepare submission materials
   - Source code link
   - Deployed service link
   - Component checklist (per assignment requirements)

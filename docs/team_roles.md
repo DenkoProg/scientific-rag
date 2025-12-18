@@ -216,24 +216,6 @@ Day 4-5:
 
 ---
 
-## ✅ Success Criteria
-
-### By December 14 (Mid-checkpoint)
-- [ ] Chunks generated and saved to disk (Member 1)
-- [ ] Qdrant collection created and indexed (Member 1)
-- [ ] BM25 retriever working (Member 2)
-- [ ] Dense retriever working (Member 2)
-- [ ] LLM client + prompts ready (Member 3)
-
-### By December 16 (Final Deadline)
-- [ ] Complete RAG pipeline functional
-- [ ] Gradio UI deployed locally
-- [ ] Evaluation examples documented
-- [ ] README.md with usage instructions
-- [ ] Ready for HuggingFace Spaces deployment
-
----
-
 ## 🚨 Risk Mitigation
 
 ### Risk: Qdrant indexing takes longer than expected

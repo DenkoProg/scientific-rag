@@ -248,5 +248,3 @@ This repository is **ready to deploy** to Hugging Face Spaces directly from the 
    - [app.py](app.py) - Main application
    - [requirements.txt](requirements.txt) - Dependencies
    - Pre-processed data in `data/processed/`
-
-See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed instructions and troubleshooting.

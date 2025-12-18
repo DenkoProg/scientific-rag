@@ -2,12 +2,12 @@
 
 ## Задача
 
-Створення RAG системи для відповідей на питання про наукові статті з датасетів ArXiv та PubMed з використанням гібридного пошуку та реранкінгу.
+Створення RAG системи для відповідей на питання про наукові статті з датасетів ArXiv та PubMed.
 
 ## Компоненти системи
 
 ### Джерело даних
-**armanc/scientific_papers** (Hugging Face Datasets) - ArXiv та PubMed наукові статті з розділами: Introduction, Methods, Results, Conclusion.
+**armanc/scientific_papers** (Hugging Face Datasets) - ArXiv та PubMed наукові статті.
 
 ### Chunking
 - Розмір: 512 токенів
@@ -57,7 +57,9 @@
 
 ## Виконання
 
-**Індивідуальне виконання**: Denys Koval
+*Architecture, Data processing, Deployment* - **Denys Koval**
+*UI, Pipeline Integration, Testing* - **Veronika Lakiza**
+*Query processing, Retrieval, Reranking* - **Daryna Vasylashko**
 
 ## Посилання
 

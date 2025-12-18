@@ -244,7 +244,18 @@ This repository is **ready to deploy** to Hugging Face Spaces directly from the 
    git push space main
    ```
 
-3. **Done!** The space will build automatically using:
+3. Add Qdrant Cloud Secret
+    1. Go to your Space on Hugging Face.
+    2. Click the **Settings** tab, then **Secrets**.
+    3. Add a new secret:
+    - **Name:** `QDRANT_API_KEY`
+    - **Value:** your Qdrant Cloud API key
+    4. (Optional) Add your Qdrant Cloud URL as another secret:
+    - **Name:** `QDRANT_URL`
+    - **Value:** your Qdrant Cloud cluster URL (e.g., `https://xxxxxxx.qdrant.cloud:6333`)
+
+    The app will automatically use these secrets if present.
+
+4. **Done!** The space will build automatically using:
    - [app.py](app.py) - Main application
    - [requirements.txt](requirements.txt) - Dependencies
-   - Pre-processed data in `data/processed/`

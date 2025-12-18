@@ -453,6 +453,7 @@ def create_demo() -> gr.Blocks:
 
     return demo
 
+
 css = """
     #answer-content {
         padding: 20px;
@@ -461,15 +462,10 @@ css = """
     }
     """
 
+
 def main():
     demo = create_demo()
-    demo.launch(
-        server_name="0.0.0.0",
-        server_port=7860,
-        share=False,
-        show_error=True,
-        css=css
-    )
+    demo.launch(server_name="0.0.0.0", server_port=7860, share=False, show_error=True, css=css)
 
 
 if __name__ == "__main__":

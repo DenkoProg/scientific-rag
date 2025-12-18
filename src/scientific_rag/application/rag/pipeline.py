@@ -74,8 +74,9 @@ class RAGPipeline:
                 query=processed_query.original, chunks=unique_chunks, top_k=rerank_top_k
             )
         else:
+            # Without reranking, sort by retrieval score and take all unique chunks
             unique_chunks.sort(key=lambda x: x.score or 0.0, reverse=True)
-            ranked_chunks = unique_chunks[:rerank_top_k]
+            ranked_chunks = unique_chunks
 
         # --- Step 4: Generation ---
         if not ranked_chunks:
@@ -92,6 +93,7 @@ class RAGPipeline:
             original_query=query,
             generated_query_variations=processed_query.variations,
             retrieved_chunks=ranked_chunks,
+            total_chunks_retrieved=len(unique_chunks),
             used_filters=final_filters.model_dump() if final_filters else None,
             execution_time=execution_time,
         )

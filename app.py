@@ -81,7 +81,7 @@ class RAGPipelineWrapper:
             raise ValueError("Please enable at least one retrieval method (BM25 or Dense).")
 
         if top_k < 1 or top_k > 50:
-            raise ValueError("Top-K must be between 1 and 20.")
+            raise ValueError("Top-K must be between 1 and 50.")
 
         if expansion_count < 1 or expansion_count > 5:
             raise ValueError("Query expansion count must be between 1 and 5.")
@@ -130,7 +130,7 @@ class RAGPipelineWrapper:
                 "paper_id": chunk.paper_id,
                 "score": chunk.score,
             }
-            for chunk in response.retrieved_chunks[:display_chunks]
+            for chunk in response.retrieved_chunks
         ]
 
         return answer, chunks_info
@@ -145,8 +145,8 @@ class RAGPipelineWrapper:
 
         if response.generated_query_variations:
             lines.append(f"- 🔍 Query Variations: {len(response.generated_query_variations) + 1}\n")
-        lines.append(f"- 📄 Retrieved Chunks: {len(response.retrieved_chunks)}\n")
-        lines.append(f"- 📊 Display Chunks: {min(display_chunks, len(response.retrieved_chunks))}\n")
+        lines.append(f"- 📄 Retrieved Chunks (before reranking): {response.total_chunks_retrieved}\n")
+        lines.append(f"- 📊 Chunks after reranking: {len(response.retrieved_chunks)}\n")
         lines.append(f"- ⏱️ Execution Time: {response.execution_time:.2f}s\n")
         lines.append(f"- 🤖 Model: {provider} / {model}\n")
 
@@ -208,31 +208,47 @@ def process_query(
             display_chunks=display_chunks,
         )
 
+        logger.info(f"Displaying {len(chunks)} chunks in UI")
         chunks_display = format_chunks_display(chunks)
 
         return (
             answer,
-            gr.update(value=chunks_display),
+            chunks_display,
             gr.update(visible=True),
             gr.update(value="", visible=False),
         )
 
     except ValueError as e:
+        logger.error(f"Validation error: {e}")
         error_msg = f"⚠️ **Input Error**: {str(e)}"
         return (
             error_msg,
-            gr.update(value=""),
+            "No chunks to display due to error.",
             gr.update(visible=True),
             gr.update(value="", visible=False),
         )
     except Exception as e:
+        logger.error(f"Processing error: {e}")
         error_msg = f"❌ **Error**: {str(e)}"
         return (
             error_msg,
-            gr.update(value=""),
+            "No chunks to display due to error.",
             gr.update(visible=True),
             gr.update(value="", visible=False),
         )
+
+
+def clear_outputs():
+    """Clear all outputs before processing new query."""
+    return (
+        gr.update(value=""),  # answer_output - explicit update
+        gr.update(value=""),  # chunks_output - explicit update
+        gr.update(visible=False),  # answer_section
+        gr.update(
+            value="⏳ **Processing your query...** Retrieving relevant papers and generating answer",
+            visible=True,
+        ),  # loading_status
+    )
 
 
 def format_chunks_display(chunks: list[dict[str, Any]]) -> str:
@@ -296,7 +312,7 @@ def create_demo() -> gr.Blocks:
                         maximum=50,
                         value=20,
                         step=1,
-                        info="Initial retrieval before reranking",
+                        info="Per query retrieval (×N with expansion, minus duplicates)",
                     )
 
                     display_chunks = gr.Slider(
@@ -400,6 +416,7 @@ def create_demo() -> gr.Blocks:
                     label="Chunks",
                     value="",
                     show_label=False,
+                    elem_id="chunks-content",
                 )
 
         provider.change(
@@ -409,15 +426,7 @@ def create_demo() -> gr.Blocks:
         )
 
         submit_btn.click(
-            fn=lambda *args: (
-                "",
-                "",
-                gr.update(visible=False),
-                gr.update(
-                    value="⏳ **Processing your query...** Retrieving relevant papers and generating answer",
-                    visible=True,
-                ),
-            ),
+            fn=clear_outputs,
             inputs=[],
             outputs=[answer_output, chunks_output, answer_section, loading_status],
         ).then(
@@ -465,7 +474,15 @@ css = """
 
 def main():
     demo = create_demo()
-    demo.launch(server_name="0.0.0.0", server_port=7860, share=False, show_error=True, css=css)
+    demo.queue()  # Enable queue for better state management
+    demo.launch(
+        server_name="0.0.0.0",
+        server_port=7860,
+        share=False,
+        show_error=True,
+        css=css,
+        state_session_capacity=10,  # Limit session state cache
+    )
 
 
 if __name__ == "__main__":

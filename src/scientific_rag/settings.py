@@ -16,7 +16,7 @@ class AppSettings(BaseSettings):
 
     # Application
     root_dir: Path = Field(default_factory=lambda: Path(__file__).parent.parent.parent)
-    logging_level: int = logging.INFO
+    logging_level: int = logging.DEBUG
 
     # Qdrant
     qdrant_url: str = "http://localhost:6333"

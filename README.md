@@ -1,3 +1,23 @@
+---
+title: Scientific RAG System
+emoji: 🔬
+colorFrom: blue
+colorTo: purple
+sdk: gradio
+sdk_version: 6.0.0
+app_file: app.py
+pinned: false
+license: mit
+tags:
+  - rag
+  - scientific-papers
+  - arxiv
+  - pubmed
+  - retrieval
+  - question-answering
+python_version: 3.11
+---
+
 # Scientific RAG
 
 🔬 **Retrieval-Augmented Generation System for Scientific Papers**
@@ -207,8 +227,26 @@ QDRANT_URL=http://localhost:6333
 QDRANT_COLLECTION_NAME=scientific_papers
 ```
 
-## 🚀 Deployment
+## 🚀 Deployment to Hugging Face Spaces
 
-Want to deploy for free? See the [ops/](ops/) folder:
-- **[ops/DEPLOYMENT.md](ops/DEPLOYMENT.md)** - Full deployment guide
-- **[ops/README_SPACES.md](ops/README_SPACES.md)** - HF Spaces README template
+This repository is **ready to deploy** to Hugging Face Spaces directly from the main branch!
+
+### Quick Deploy (3 Steps)
+
+1. **Create Space**: Go to [huggingface.co/new-space](https://huggingface.co/new-space)
+   - Name: `scientific-rag`
+   - SDK: Gradio
+   - License: MIT
+
+2. **Link Repository**: In Space settings, connect your GitHub repo or push directly:
+   ```bash
+   git remote add space https://huggingface.co/spaces/YOUR_USERNAME/scientific-rag
+   git push space main
+   ```
+
+3. **Done!** The space will build automatically using:
+   - [app.py](app.py) - Main application
+   - [requirements.txt](requirements.txt) - Dependencies
+   - Pre-processed data in `data/processed/`
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed instructions and troubleshooting.

@@ -38,8 +38,8 @@ info: ## Show pipeline configuration and Qdrant status
 	@uv run cli info
 
 .PHONY: run-app
-run-app: ## Run Gradio demo application
-	@uv run python -m demo.main
+run-app: ## Run Gradio application
+	@uv run python app.py
 
 .PHONY: lint
 lint: ## Run ruff linter

@@ -257,15 +257,7 @@ def format_chunks_display(chunks: list[dict[str, Any]]) -> str:
 
 
 def create_demo() -> gr.Blocks:
-    css = """
-    #answer-content {
-        padding: 20px;
-        border-radius: 8px;
-        margin-bottom: 8px;
-    }
-    """
-
-    with gr.Blocks(title="Scientific RAG System", css=css) as demo:
+    with gr.Blocks(title="Scientific RAG System") as demo:
         gr.Markdown(MAIN_HEADER)
 
         with gr.Accordion("⚙️ Configuration", open=True):
@@ -461,6 +453,13 @@ def create_demo() -> gr.Blocks:
 
     return demo
 
+css = """
+    #answer-content {
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 8px;
+    }
+    """
 
 def main():
     demo = create_demo()
@@ -469,6 +468,7 @@ def main():
         server_port=7860,
         share=False,
         show_error=True,
+        css=css
     )
 
 
